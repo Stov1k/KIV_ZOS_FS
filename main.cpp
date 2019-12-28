@@ -7,10 +7,12 @@
 #include <cstring>
 #include <bitset>
 #include "zosfsstruct.h"
+#include "incp.h"
+#include "inode.h"
+#include <sys/stat.h>
+#include <cstdio>
 
-std::string input_file_name;
-superblock super_block;
-pseudo_inode current_dir;
+filesystem filesystem_data;
 
 /**
  * Vypise adresare
@@ -42,15 +44,15 @@ directory_item getDirectory(int32_t nodeid, std::string name) {
  */
 std::vector<directory_item> getDirectories() {
     std::fstream input_file;
-    input_file.open(input_file_name, std::ios::in);
+    input_file.open(filesystem_data.fs_file, std::ios::in);
 
     std::vector<directory_item> directories;
 
     // pocet adresaru na jeden data blok
-    uint32_t dirs_per_cluster = super_block.cluster_size / sizeof(directory_item);
+    uint32_t dirs_per_cluster = filesystem_data.super_block.cluster_size / sizeof(directory_item);
 
     // skok na prvni primy odkaz v inode (TODO: pozdeji predelat na iteraci)
-    input_file.seekp(current_dir.direct1);
+    input_file.seekp(filesystem_data.current_dir.direct1);
 
     // nacteni slozek a vlozeni do vectoru
     directory_item dirs_array[dirs_per_cluster];
@@ -82,23 +84,19 @@ bool isDirectoryExists(directory_item& dir) {
 
 /**
  * Vypise bitmapu
- * @param input_file_name
- * @param input_file
  */
 void print_bitmap() {
     std::fstream input_file;
-    input_file.open(input_file_name, std::ios::in);
+    input_file.open(filesystem_data.fs_file, std::ios::in);
     if (!input_file.is_open()) {
         std::cout << "Nelze otevrit." << std::endl;
     } else {
-        // super block
-        superblock super_block;
         // nacteni
-        input_file.read(reinterpret_cast<char *>(&super_block), sizeof(superblock));
+        input_file.read(reinterpret_cast<char *>(&filesystem_data.super_block), sizeof(superblock));
         // skok na bitmapu
-        input_file.seekp(super_block.bitmap_start_address);
+        input_file.seekp(filesystem_data.super_block.bitmap_start_address);
 
-        int bitmap_size_bytes = (super_block.inode_start_address - super_block.bitmap_start_address);
+        int bitmap_size_bytes = (filesystem_data.super_block.inode_start_address - filesystem_data.super_block.bitmap_start_address);
 
         for(int i = 0; i < bitmap_size_bytes; i++) {
             char b;
@@ -114,26 +112,25 @@ void print_bitmap() {
 
 void openFS() {
     std::fstream input_file;
-    input_file.open(input_file_name, std::ios::in | std::ios::out | std::ios::binary);
+    input_file.open(filesystem_data.fs_file, std::ios::in | std::ios::out | std::ios::binary);
 
     // nacteni
-    input_file.read(reinterpret_cast<char *>(&super_block), sizeof(superblock));
+    input_file.read(reinterpret_cast<char *>(&filesystem_data.super_block), sizeof(superblock));
     if (!input_file.is_open()) {
         std::cout << "FS neni otevren. " << std::endl;
     }
-    std::cout << "Podpis: " << super_block.signature << std::endl;
+    std::cout << "Podpis: " << filesystem_data.super_block.signature << std::endl;
 
     //nastaveni korenoveho adresare
-    input_file.seekp(super_block.inode_start_address);
-    input_file.read(reinterpret_cast<char *>(&current_dir), sizeof(pseudo_inode));
+    input_file.seekp(filesystem_data.super_block.inode_start_address);
+    input_file.read(reinterpret_cast<char *>(&filesystem_data.current_dir), sizeof(pseudo_inode));
 
     input_file.close();
 }
 
 /**
  * Naformatovani souboru
- * @param input_file_name
- * @param input_file
+ * @param size velikost disku
  */
 void formatFS(int size) {
     int remaining_space = size;
@@ -141,39 +138,42 @@ void formatFS(int size) {
     std::fstream input_file;
 
     // Vytvoreni / format souboru
-    input_file.open(input_file_name, std::ios::binary | std::ios::trunc | std::ios::in | std::ios::out);
+    input_file.open(filesystem_data.fs_file, std::ios::binary | std::ios::trunc | std::ios::in | std::ios::out);
     input_file.close();
 
     // otevreni souboru pro zapis
-    input_file.open(input_file_name, std::ios::binary | std::ios::trunc | std::ios::in | std::ios::out);
+    input_file.open(filesystem_data.fs_file, std::ios::binary | std::ios::trunc | std::ios::in | std::ios::out);
 
     // prazdny 1B pouzivany pri zapisu
     uint8_t byte{0};
 
     // super block
-    superblock super_block = superblock{};
+    filesystem_data.super_block = superblock{};
     std::string signature = "zelenka";
     std::string description = "muj fs";
-    std::strncpy(super_block.signature, signature.c_str(), sizeof(super_block.signature));
-    super_block.signature[sizeof(super_block.signature) - 1] = '\0';
-    std::strncpy(super_block.volume_descriptor, description.c_str(), sizeof(super_block.volume_descriptor));
-    super_block.volume_descriptor[sizeof(super_block.volume_descriptor) - 1] = '\0';
+    std::strncpy(filesystem_data.super_block.signature, signature.c_str(), sizeof(filesystem_data.super_block.signature));
+    filesystem_data.super_block.signature[sizeof(filesystem_data.super_block.signature) - 1] = '\0';
+    std::strncpy(filesystem_data.super_block.volume_descriptor, description.c_str(), sizeof(filesystem_data.super_block.volume_descriptor));
+    filesystem_data.super_block.volume_descriptor[sizeof(filesystem_data.super_block.volume_descriptor) - 1] = '\0';
 
     int cluster_size = 1024;
     remaining_space = remaining_space - sizeof(superblock);
     int inodes = remaining_space/cluster_size;
     remaining_space = remaining_space - sizeof(pseudo_inode);
-    int bitmap_size_bytes = remaining_space/(8 * cluster_size);
     int bitmap_size = remaining_space/cluster_size;
+    int correction = bitmap_size%8;                     // velikost FS bude vzdy delitelna 8 (bitmapa pak vyuzije vzdy cely byte)
+    bitmap_size = bitmap_size - correction;
+    int bitmap_size_bytes = bitmap_size/8;
+
     int clusters = bitmap_size;
 
-    super_block.disk_size = sizeof(superblock) + bitmap_size + inodes + cluster_size*clusters;
-    super_block.cluster_size = cluster_size;
-    super_block.cluster_count = clusters;
-    super_block.bitmap_start_address = sizeof(super_block);
-    super_block.inode_start_address = sizeof(super_block) + sizeof(byte)*bitmap_size_bytes;
-    super_block.data_start_address = sizeof(super_block) + sizeof(byte)*bitmap_size_bytes + sizeof(pseudo_inode)*inodes;
-    input_file.write(reinterpret_cast<const char *>(&super_block), sizeof(superblock));
+    filesystem_data.super_block.disk_size = sizeof(superblock) + bitmap_size + inodes + cluster_size*clusters;
+    filesystem_data.super_block.cluster_size = cluster_size;
+    filesystem_data.super_block.cluster_count = clusters;
+    filesystem_data.super_block.bitmap_start_address = sizeof(filesystem_data.super_block);
+    filesystem_data.super_block.inode_start_address = sizeof(filesystem_data.super_block) + sizeof(byte)*bitmap_size_bytes;
+    filesystem_data.super_block.data_start_address = sizeof(filesystem_data.super_block) + sizeof(byte)*bitmap_size_bytes + sizeof(pseudo_inode)*inodes;
+    input_file.write(reinterpret_cast<const char *>(&filesystem_data.super_block), sizeof(superblock));
 
 
     // zapis inodu
@@ -204,7 +204,7 @@ void formatFS(int size) {
     inode.nodeid = 1;
     inode.isDirectory = true;
     inode.references++;
-    inode.direct1 = super_block.data_start_address;
+    inode.direct1 = filesystem_data.super_block.data_start_address;
     inode.direct2 = 0;
     inode.direct3 = 0;
     inode.direct4 = 0;
@@ -229,20 +229,20 @@ void formatFS(int size) {
         directories[i] = directory_item{};
         directories[i].inode = 0;   // tj. nic
     }
-    current_dir = inode;
+    filesystem_data.current_dir = inode;
 
     // vytvoreni korenoveho adresare: uprava bitmapy
-    input_file.seekp(super_block.bitmap_start_address); // skoci na bitmapu
+    input_file.seekp(filesystem_data.super_block.bitmap_start_address); // skoci na bitmapu
     uint8_t byte1{1};       // TODO: neni idealni, chci menit jen 1 bit, ne 1 byte
     std::cout << (int)byte1 << " pos:" << input_file.tellg() << std::endl;
     input_file.write(reinterpret_cast<const char *>(&byte1), sizeof(byte1));    // zapise upravenou bitmapu
 
     // vytvoreni korenoveho adresare: zapis dat
-    input_file.seekp(super_block.data_start_address); // skoci na data
+    input_file.seekp(filesystem_data.super_block.data_start_address); // skoci na data
     input_file.write(reinterpret_cast<const char *>(&directories), sizeof(directories));
 
     // vytvoreni korenoveho adresare: zapis inode
-    input_file.seekp(super_block.inode_start_address); // skoci na inody
+    input_file.seekp(filesystem_data.super_block.inode_start_address); // skoci na inody
     input_file.write(reinterpret_cast<const char *>(&inode), sizeof(inode));
 
     input_file.close();
@@ -252,49 +252,18 @@ void formatFS(int size) {
 }
 
 /**
- * Vrati volny inode
- * @return inode
- */
-pseudo_inode getFreeNode() {
-    std::fstream input_file;
-    input_file.open(input_file_name, std::ios::in);
-
-    input_file.seekp(super_block.inode_start_address);
-    int32_t inodes_count = (super_block.data_start_address - super_block.inode_start_address) / sizeof(pseudo_inode);
-    pseudo_inode inode;
-    pseudo_inode inodes[inodes_count];
-    input_file.read(reinterpret_cast<char *>(&inodes), sizeof(inodes));
-    bool found = false;     // tohle byt pozdeji nemusi
-    for(int i = 0; i < inodes_count; i++) {
-        if(inodes[i].nodeid == 0) {
-            if(!found) {
-                inode = inodes[i];
-                inode.nodeid = (i+1);
-                found = true;
-            }
-            std::cout << "Inode " << (i+1) << " je volny." << std::endl;
-        } else {
-            std::cout << "Inode " << (i+1) << " je obsazeny." << std::endl;
-        };
-    }
-
-    input_file.close();
-    return inode;
-}
-
-/**
  * Vrati volnou pozici databloku
  * @param buf buffer - pozice v bloku, pozice v byte, bitmap byte
  * @return vrati, zdali existuje volna pozice
  */
 bool getFreePosition(int32_t buf[]) {
     std::fstream input_file;
-    input_file.open(input_file_name, std::ios::in);
+    input_file.open(filesystem_data.fs_file, std::ios::in);
 
-    input_file.seekp(super_block.bitmap_start_address);
+    input_file.seekp(filesystem_data.super_block.bitmap_start_address);
     bool found = false;
     uint8_t bitmap_byte;
-    int bitmap_size_bytes = (super_block.inode_start_address - super_block.bitmap_start_address);
+    int bitmap_size_bytes = (filesystem_data.super_block.inode_start_address - filesystem_data.super_block.bitmap_start_address);
     for(int i = 0; i < bitmap_size_bytes; i++) {
         char b;
         input_file.read(&b, 1);
@@ -344,13 +313,14 @@ bool getFreePosition(int32_t buf[]) {
 void mkdir(std::string &dir_name) {
 
     std::fstream input_file;
-    input_file.open(input_file_name, std::ios::in | std::ios::out | std::ios::binary);
+    input_file.open(filesystem_data.fs_file, std::ios::in | std::ios::out | std::ios::binary);
 
     // novy adresar
     directory_item dir = getDirectory(0, dir_name);
 
     // nalezeny volny inode
     pseudo_inode inode;
+    pseudo_inode * inode_ptr;
 
     // zjistim, zdali jiz neexistuje adresar stejneho nazvu
     if(isDirectoryExists(dir)) {
@@ -360,7 +330,14 @@ void mkdir(std::string &dir_name) {
     }
 
     // najdu volny inode
-    inode = getFreeNode();
+    inode_ptr = getFreeINode(filesystem_data);
+    if(inode_ptr != nullptr) {
+        inode = *inode_ptr;
+    } else {
+        input_file.close();
+        std::cout << "FREE INODE NOT FOUND" << std::endl;
+        return;
+    }
 
     // najdu v bitmape volny datablok
     int32_t buf[3];
@@ -373,8 +350,8 @@ void mkdir(std::string &dir_name) {
     uint8_t bitmap_byte = (uint8_t) buf[2];
 
     //v korenovem adresari vytvorim polozku dir(nazev, inode)
-    input_file.seekp(current_dir.direct1);
-    uint32_t dirs_per_cluster = super_block.cluster_size / sizeof(directory_item);
+    input_file.seekp(filesystem_data.current_dir.direct1);
+    uint32_t dirs_per_cluster = filesystem_data.super_block.cluster_size / sizeof(directory_item);
     directory_item dirs[dirs_per_cluster];
     input_file.read(reinterpret_cast<char *>(&dirs), sizeof(dirs));
     for(int i = 0; i < dirs_per_cluster; i++) {
@@ -386,18 +363,18 @@ void mkdir(std::string &dir_name) {
     }
 
     // aktualizace bitmapy
-    input_file.seekp(super_block.bitmap_start_address); // skoci na bitmapu
+    input_file.seekp(filesystem_data.super_block.bitmap_start_address); // skoci na bitmapu
     input_file.write(reinterpret_cast<const char *>(&bitmap_byte), sizeof(bitmap_byte));    // zapise upravenou bitmapu
 
     // aktualizace podslozek v nadrazenem adresari
-    input_file.seekp(current_dir.direct1); // skoci na data
+    input_file.seekp(filesystem_data.current_dir.direct1); // skoci na data
     input_file.write(reinterpret_cast<const char *>(&dirs), sizeof(dirs));
 
     // zapis inode
-    input_file.seekp(super_block.inode_start_address + (inode.nodeid-1) * sizeof(pseudo_inode));
+    input_file.seekp(filesystem_data.super_block.inode_start_address + (inode.nodeid-1) * sizeof(pseudo_inode));
     inode.isDirectory = true;
     inode.references++;
-    inode.direct1 = super_block.data_start_address + (position * super_block.cluster_size);
+    inode.direct1 = filesystem_data.super_block.data_start_address + (position * filesystem_data.super_block.cluster_size);
     inode.direct2 = 0;
     inode.direct3 = 0;
     inode.direct4 = 0;
@@ -412,11 +389,11 @@ void mkdir(std::string &dir_name) {
 
     // predchozi adresar
     directory_item dir_parrent;
-    dir_parrent = getDirectory(current_dir.nodeid, "..");
+    dir_parrent = getDirectory(filesystem_data.current_dir.nodeid, "..");
 
     // predchozi adresar
     directory_item dir_b;
-    dir_b = getDirectory(current_dir.nodeid, "b");
+    dir_b = getDirectory(filesystem_data.current_dir.nodeid, "b");
 
     directory_item subdirectories[dirs_per_cluster];
     subdirectories[0] = dir_dot;                       // .
@@ -427,7 +404,7 @@ void mkdir(std::string &dir_name) {
     }
 
     // aktualizace podslozek v novem adresari
-    input_file.seekp(super_block.data_start_address + (position * super_block.cluster_size)); // skoci na data
+    input_file.seekp(filesystem_data.super_block.data_start_address + (position * filesystem_data.super_block.cluster_size)); // skoci na data
     input_file.write(reinterpret_cast<const char *>(&subdirectories), sizeof(subdirectories));
 
     input_file.close();
@@ -439,15 +416,15 @@ void mkdir(std::string &dir_name) {
  */
 void cd(std::string &dir_name) {
     std::fstream input_file;
-    input_file.open(input_file_name, std::ios::in | std::ios::out | std::ios::binary);
+    input_file.open(filesystem_data.fs_file, std::ios::in | std::ios::out | std::ios::binary);
 
     // zjistim, zdali existuje adresar stejneho nazvu
     std::vector<directory_item> directories = getDirectories();
     for(auto& directory : directories) {
         directory.item_name;
         if(strcmp(dir_name.c_str(),directory.item_name) == 0) {
-            input_file.seekp(super_block.inode_start_address + (directory.inode-1) * sizeof(pseudo_inode));
-            input_file.read(reinterpret_cast<char *>(&current_dir), sizeof(pseudo_inode));
+            input_file.seekp(filesystem_data.super_block.inode_start_address + (directory.inode-1) * sizeof(pseudo_inode));
+            input_file.read(reinterpret_cast<char *>(&filesystem_data.current_dir), sizeof(pseudo_inode));
             std::cout << "OK" << std::endl;
             break;
         }
@@ -458,19 +435,17 @@ void cd(std::string &dir_name) {
 
 /**
  * Prikaz ls: vypise obsah aktualniho adresare
- * @param input_file_name
- * @param input_file
  */
 void ls() {
     std::fstream input_file;
-    input_file.open(input_file_name, std::ios::in);
+    input_file.open(filesystem_data.fs_file, std::ios::in);
     if (!input_file.is_open()) {
         std::cout << "Nelze otevrit." << std::endl;
     } else {
         // skok na inode
-        input_file.seekp(current_dir.direct1);
+        input_file.seekp(filesystem_data.current_dir.direct1);
 
-        uint32_t dirs_per_cluster = super_block.cluster_size / sizeof(directory_item);
+        uint32_t dirs_per_cluster = filesystem_data.super_block.cluster_size / sizeof(directory_item);
         directory_item directories[dirs_per_cluster];
 
         input_file.read(reinterpret_cast<char *>(&directories), sizeof(directories));
@@ -491,18 +466,20 @@ void ls() {
  */
 int main(int argc, char **argv) {
 
+    filesystem_data = filesystem{};
+
     // Nacteni nazvu souboru
     if(argc >= 2) {
-        input_file_name.append(argv[1]);
+        filesystem_data.fs_file.append(argv[1]);
     } else {
         char myword[] = "my.fs";
-        input_file_name.append(myword);
+        filesystem_data.fs_file.append(myword);
     }
-    std::cout << "File: " << input_file_name << std::endl;
+    std::cout << "File: " << filesystem_data.fs_file << std::endl;
 
     // Otevreni souboru pro cteni
     std::fstream input_file;
-    input_file.open(input_file_name, std::ios::in);
+    input_file.open(filesystem_data.fs_file, std::ios::in);
     if (!input_file.is_open()) {
         std::cout << "Nelze otevrit." << std::endl;
     } else {
@@ -557,7 +534,7 @@ int main(int argc, char **argv) {
             std::cout << "Bitmapa... " << std::endl;
             print_bitmap();
         }  else if (cmd.size() > 0 && cmd[0] == "ls") {
-            int bitmap_size_bytes = (super_block.inode_start_address - super_block.bitmap_start_address);
+            int bitmap_size_bytes = (filesystem_data.super_block.inode_start_address - filesystem_data.super_block.bitmap_start_address);
             std::cout << "Obsah " << bitmap_size_bytes << std::endl;
             ls();
         }  else if (cmd.size() > 0 && cmd[0] == "mkdir") {
@@ -565,6 +542,12 @@ int main(int argc, char **argv) {
                 std::cout << "CANNOT CREATE DIRECTORY" << std::endl;
             } else {
                 mkdir(cmd[1]);
+            }
+        }  else if (cmd.size() > 0 && cmd[0] == "incp") {
+            if(cmd.size() < 3) {
+                std::cout << "PATH NOT FOUND" << std::endl;
+            } else {
+                inputCopy(filesystem_data, cmd[1], cmd[1]);
             }
         }  else if (cmd.size() > 0 && cmd[0] == "cd") {
             if(cmd.size() == 1) {

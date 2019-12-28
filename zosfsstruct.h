@@ -39,4 +39,11 @@ struct directory_item {
     char item_name[12];              //8+3 + /0 C/C++ ukoncovaci string znak
 };
 
+struct filesystem {
+    std::string fs_file;
+    superblock super_block;
+    pseudo_inode current_dir;
+    pseudo_inode root_dir;
+};
+
 #endif //ZOSFS_ZOSFSSTRUCT_H
