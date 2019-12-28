@@ -115,7 +115,7 @@ void inputCopy(filesystem &filesystem_data, std::string &input, std::string &loc
     // provest zapis
 
     // aktualizace bitmapy
-    //input_file.seekp(filesystem_data.super_block.bitmap_start_address); // skoci na bitmapu
+    //input_file.seekp(filesystem_data.super_block.bitmap_start_address+position_byte); // skoci na bitmapu
     //input_file.write(reinterpret_cast<const char *>(&bitmap_byte), sizeof(bitmap_byte));    // zapise upravenou bitmapu
 
     // aktualizace podslozek v nadrazenem adresari

@@ -189,7 +189,7 @@ void formatFS(int size) {
 
 /**
  * Vrati volnou pozici databloku
- * @param buf buffer - pozice v bloku, pozice v byte, bitmap byte
+ * @param buf buffer - pozice v bloku, pozice v byte, bitmap byte, poradi bytu
  * @return vrati, zdali existuje volna pozice
  */
 bool getFreePosition(int32_t buf[]) {
@@ -208,13 +208,13 @@ bool getFreePosition(int32_t buf[]) {
         std::bitset<8> x(b);
 
         // vyhledani nuloveho bitu
-        for(int i = 0; i < 8; i++) {
-            bool used = x.test(i);
+        for(int j = 0; j < 8; j++) {
+            bool used = x.test(j);
             if(!found && !used) {
                 found = true;
-                buf[1] = i;
+                buf[1] = j;
             }
-            std::cout << i << " " << used << std::endl;
+            std::cout << j << " " << used << std::endl;
         }
         std::cout << "Pozice " << buf[1] << std::endl;
 
@@ -231,6 +231,7 @@ bool getFreePosition(int32_t buf[]) {
         if(found) {
             buf[0] = buf[1] + (8*i);
             buf[2] = bitmap_byte;
+            buf[3] = i;
             break;
         }
     }
@@ -276,13 +277,14 @@ void mkdir(std::string &dir_name) {
     }
 
     // najdu v bitmape volny datablok
-    int32_t buf[3];
+    int32_t buf[4];
     bool found = getFreePosition(buf);
     if(!found) {
         std::cout << "DISK IS FULL" << std::endl;
         return;
     }
-    int32_t position = buf[0];
+    int32_t position_absolute = buf[0];     // poradi bitu od zacatku bitmapy
+    int32_t position_byte = buf[3];         // poradi bytu v bitmape
     uint8_t bitmap_byte = (uint8_t) buf[2];
 
     //v korenovem adresari vytvorim polozku dir(nazev, inode)
@@ -297,9 +299,9 @@ void mkdir(std::string &dir_name) {
             break;
         }
     }
-
+    std::cout << "POS " << position_byte << std::endl;
     // aktualizace bitmapy
-    input_file.seekp(filesystem_data.super_block.bitmap_start_address); // skoci na bitmapu
+    input_file.seekp(filesystem_data.super_block.bitmap_start_address+position_byte); // skoci na bitmapu
     input_file.write(reinterpret_cast<const char *>(&bitmap_byte), sizeof(bitmap_byte));    // zapise upravenou bitmapu
 
     // aktualizace podslozek v nadrazenem adresari
@@ -310,7 +312,7 @@ void mkdir(std::string &dir_name) {
     input_file.seekp(filesystem_data.super_block.inode_start_address + (inode.nodeid-1) * sizeof(pseudo_inode));
     inode.isDirectory = true;
     inode.references++;
-    inode.direct1 = filesystem_data.super_block.data_start_address + (position * filesystem_data.super_block.cluster_size);
+    inode.direct1 = filesystem_data.super_block.data_start_address + (position_absolute * filesystem_data.super_block.cluster_size);
     inode.direct2 = 0;
     inode.direct3 = 0;
     inode.direct4 = 0;
@@ -336,7 +338,7 @@ void mkdir(std::string &dir_name) {
     }
 
     // aktualizace podslozek v novem adresari
-    input_file.seekp(filesystem_data.super_block.data_start_address + (position * filesystem_data.super_block.cluster_size)); // skoci na data
+    input_file.seekp(filesystem_data.super_block.data_start_address + (position_absolute * filesystem_data.super_block.cluster_size)); // skoci na data
     input_file.write(reinterpret_cast<const char *>(&subdirectories), sizeof(subdirectories));
 
     input_file.close();
