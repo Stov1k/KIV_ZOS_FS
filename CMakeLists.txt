@@ -3,4 +3,4 @@ project(ZOSFS)
 
 set(CMAKE_CXX_STANDARD 17)
 
-add_executable(ZOSFS main.cpp zosfsstruct.h incp.cpp incp.h inode.cpp inode.h)
+add_executable(ZOSFS main.cpp zosfsstruct.h incp.cpp incp.h inode.cpp inode.h directory.cpp directory.h)
