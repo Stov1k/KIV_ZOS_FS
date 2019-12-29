@@ -12,6 +12,7 @@
 #include "zosfsstruct.h"
 #include "inode.h"
 #include "directory.h"
+#include "datablock.h"
 
 /**
  * Spocte pocet volnych databloku z bitmapy
@@ -113,7 +114,37 @@ void inputCopy(filesystem &filesystem_data, std::string &input, std::string &loc
 
 
     // provest zapis
+    int writed = 0;
+    char buffer[filesystem_data.super_block.cluster_size];
+    int32_t datablock[3];
+    // 1P - prvni datablock
+    std::ifstream file_input(input, std::ios::in | std::ios::binary );
+    getFreePosition(filesystem_data, datablock);
+    int32_t position_absolute = datablock[0];
+    int32_t position_byte = datablock[3];           // poradi bytu v bitmape
+    uint8_t bitmap_byte = (uint8_t) datablock[2];
+    file_input.read(buffer, filesystem_data.super_block.cluster_size);
+    // 1P - aktualizace bitmapy
+    input_file.seekp(filesystem_data.super_block.bitmap_start_address + position_byte); // skoci na bitmapu
+    input_file.write(reinterpret_cast<const char *>(&bitmap_byte), sizeof(bitmap_byte));    // zapise upravenou bitmapu
+    // 1P - aktualizace dat
+    input_file.seekp(filesystem_data.super_block.data_start_address + (position_absolute * filesystem_data.super_block.cluster_size));
+    input_file.write(reinterpret_cast<const char *>(&buffer), sizeof(buffer));
+    inode.direct1 = filesystem_data.super_block.data_start_address + (position_absolute * filesystem_data.super_block.cluster_size);;
 
+    // 2P - druhy datablock
+    // 3P - treti datablock
+    // 4P - ctvrty datablock
+    // 5P - paty datablock
+    // 1N - prvni neprimy
+    // 2N - druhy neprimy
+
+
+
+
+    //while(filesize > writed) {
+
+    //}
 
     // aktualizace bitmapy
     //input_file.seekp(filesystem_data.super_block.bitmap_start_address+position_byte); // skoci na bitmapu
@@ -127,7 +158,6 @@ void inputCopy(filesystem &filesystem_data, std::string &input, std::string &loc
     input_file.seekp(filesystem_data.super_block.inode_start_address + (inode.nodeid-1) * sizeof(pseudo_inode));
     inode.isDirectory = false;
     inode.references++;
-    inode.direct1 = 0;
     inode.direct2 = 0;
     inode.direct3 = 0;
     inode.direct4 = 0;

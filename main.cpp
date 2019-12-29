@@ -10,6 +10,7 @@
 #include "incp.h"
 #include "inode.h"
 #include "directory.h"
+#include "datablock.h"
 #include <sys/stat.h>
 #include <cstdio>
 
@@ -188,62 +189,6 @@ void formatFS(int size) {
 }
 
 /**
- * Vrati volnou pozici databloku
- * @param buf buffer - pozice v bloku, pozice v byte, bitmap byte, poradi bytu
- * @return vrati, zdali existuje volna pozice
- */
-bool getFreePosition(int32_t buf[]) {
-    std::fstream input_file;
-    input_file.open(filesystem_data.fs_file, std::ios::in);
-
-    input_file.seekp(filesystem_data.super_block.bitmap_start_address);
-    bool found = false;
-    uint8_t bitmap_byte;
-    int bitmap_size_bytes = (filesystem_data.super_block.inode_start_address - filesystem_data.super_block.bitmap_start_address);
-    for(int i = 0; i < bitmap_size_bytes; i++) {
-        char b;
-        input_file.read(&b, 1);
-
-        // bitova mnozina reprezentujici 8 databloku
-        std::bitset<8> x(b);
-
-        // vyhledani nuloveho bitu
-        for(int j = 0; j < 8; j++) {
-            bool used = x.test(j);
-            if(!found && !used) {
-                found = true;
-                buf[1] = j;
-            }
-            std::cout << j << " " << used << std::endl;
-        }
-        std::cout << "Pozice " << buf[1] << std::endl;
-
-        // zmena bitu
-        if(found) {
-            x.set(buf[1], true);   // zmeni cislo na pozici na 1
-        }
-        unsigned long ul = x.to_ulong();
-        unsigned int c = static_cast<unsigned int>(ul);
-        bitmap_byte = c;
-        std::cout << x << " pos:" << input_file.tellg() << " Long:" << ul << " Int:" << c << std::endl;
-
-        // konec cyklu
-        if(found) {
-            buf[0] = buf[1] + (8*i);
-            buf[2] = bitmap_byte;
-            buf[3] = i;
-            break;
-        }
-    }
-
-    input_file.close();
-    if(found) {
-        return true;
-    }
-    return false;
-}
-
-/**
  * Prikaz mkdir
  * @param dir_name nazev adresare
  */
@@ -277,15 +222,15 @@ void mkdir(std::string &dir_name) {
     }
 
     // najdu v bitmape volny datablok
-    int32_t buf[4];
-    bool found = getFreePosition(buf);
+    int32_t datablock_buf[4];
+    bool found = getFreePosition(filesystem_data, datablock_buf);
     if(!found) {
         std::cout << "DISK IS FULL" << std::endl;
         return;
     }
-    int32_t position_absolute = buf[0];     // poradi bitu od zacatku bitmapy
-    int32_t position_byte = buf[3];         // poradi bytu v bitmape
-    uint8_t bitmap_byte = (uint8_t) buf[2];
+    int32_t position_absolute = datablock_buf[0];       // poradi bitu od zacatku bitmapy
+    int32_t position_byte = datablock_buf[3];           // poradi bytu v bitmape
+    uint8_t bitmap_byte = (uint8_t) datablock_buf[2];
 
     //v korenovem adresari vytvorim polozku dir(nazev, inode)
     input_file.seekp(filesystem_data.current_dir.direct1);
