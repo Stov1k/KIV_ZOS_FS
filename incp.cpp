@@ -82,7 +82,7 @@ void inputCopy(filesystem &filesystem_data, std::string &input, std::string &loc
     long free_space = countFreeDatablock(filesystem_data);
     free_space = free_space * filesystem_data.super_block.cluster_size;
     if(free_space < filesize) {
-        std::cout << "NOT ENOUGH SPACE (FREE: " << free_space << " REQUIRED: " + filesize << ")" << std::endl;
+        std::cout << "NOT ENOUGH SPACE (FREE: " << free_space << " REQUIRED: " << filesize << ")" << std::endl;
         return;
     }
 
@@ -113,6 +113,7 @@ void inputCopy(filesystem &filesystem_data, std::string &input, std::string &loc
 
 
     // provest zapis
+
 
     // aktualizace bitmapy
     //input_file.seekp(filesystem_data.super_block.bitmap_start_address+position_byte); // skoci na bitmapu
