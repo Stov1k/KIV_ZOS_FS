@@ -14,7 +14,7 @@
  * @param buf buffer - pozice v bloku, pozice v byte, bitmap byte, poradi bytu
  * @return vrati, zdali existuje volna pozice
  */
-bool getFreePosition(filesystem& filesystem_data, int32_t buf[]) {
+bool getFreeDatablock(filesystem& filesystem_data, int32_t buf[]) {
     std::fstream input_file;
     input_file.open(filesystem_data.fs_file, std::ios::in);
 

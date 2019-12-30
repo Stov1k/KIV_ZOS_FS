@@ -223,7 +223,7 @@ void mkdir(std::string &dir_name) {
 
     // najdu v bitmape volny datablok
     int32_t datablock_buf[4];
-    bool found = getFreePosition(filesystem_data, datablock_buf);
+    bool found = getFreeDatablock(filesystem_data, datablock_buf);
     if(!found) {
         std::cout << "DISK IS FULL" << std::endl;
         return;
