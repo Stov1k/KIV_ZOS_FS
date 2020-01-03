@@ -13,9 +13,9 @@
  * Vypise adresare
  * @param directories vektor adresaru
  */
-void printDirectories(const std::vector<directory_item>& directories) {
-    for(auto& directory : directories) {
-        std::cout << "\t"<< directory.inode << "\t" << directory.item_name << std::endl;
+void printDirectories(const std::vector<directory_item> &directories) {
+    for (auto &directory : directories) {
+        std::cout << "\t" << directory.inode << "\t" << directory.item_name << std::endl;
     }
 }
 
@@ -38,7 +38,7 @@ std::vector<directory_item> getDirectories(filesystem &filesystem_data) {
     // nacteni slozek a vlozeni do vectoru
     directory_item dirs_array[dirs_per_cluster];
     input_file.read(reinterpret_cast<char *>(&dirs_array), sizeof(dirs_array));
-    for(int i = 0; i < dirs_per_cluster; i++) {
+    for (int i = 0; i < dirs_per_cluster; i++) {
         if (dirs_array[i].inode) {
             directories.push_back(dirs_array[i]);
         }
@@ -52,11 +52,11 @@ std::vector<directory_item> getDirectories(filesystem &filesystem_data) {
  * @param dir adresar
  * @return existuje adresar stejneho jmena?
  */
-bool isDirectoryExists(filesystem& filesystem_data, directory_item& dir) {
+bool isDirectoryExists(filesystem &filesystem_data, directory_item &dir) {
     std::vector<directory_item> directories = getDirectories(filesystem_data);
-    for(auto& directory : directories) {
+    for (auto &directory : directories) {
         directory.item_name;
-        if(strcmp(dir.item_name,directory.item_name) == 0) {
+        if (strcmp(dir.item_name, directory.item_name) == 0) {
             return true;
         }
     }

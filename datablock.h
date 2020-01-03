@@ -12,6 +12,6 @@
  * @param buf buffer - pozice v bloku, pozice v byte, bitmap byte, poradi bytu
  * @return vrati, zdali existuje volna pozice
  */
-bool getFreeDatablock(filesystem& filesystem_data, int32_t buf[]);
+bool getFreeDatablock(filesystem &filesystem_data, int32_t buf[]);
 
 #endif //ZOSFS_DATABLOCK_H

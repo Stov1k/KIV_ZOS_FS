@@ -14,7 +14,7 @@
  * Vypise adresare
  * @param directories vektor adresaru
  */
-void printDirectories(const std::vector<directory_item>& directories);
+void printDirectories(const std::vector<directory_item> &directories);
 
 /**
  * Vrati vektor podadresaru v aktualnim adresari
@@ -27,7 +27,7 @@ std::vector<directory_item> getDirectories(filesystem &filesystem_data);
  * @param dir adresar
  * @return existuje adresar stejneho jmena?
  */
-bool isDirectoryExists(filesystem& filesystem_data, directory_item& dir);
+bool isDirectoryExists(filesystem &filesystem_data, directory_item &dir);
 
 /**
  * Vrati referenci na adresar
