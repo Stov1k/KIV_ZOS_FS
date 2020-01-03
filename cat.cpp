@@ -58,6 +58,12 @@ void printBuffer(char buffer[], int32_t len) {
     }
 }
 
+/**
+ * Nacte datablock do bufferu a vypise jej
+ * @param filesystem_data informace filesystemu
+ * @param fs_file otevreny soubor
+ * @param location pocatecni pozice datablocku
+ */
 void readDataBlock(filesystem &filesystem_data, std::fstream &fs_file, int32_t location) {
     // priprava bufferu
     char buffer[filesystem_data.super_block.cluster_size];
