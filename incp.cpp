@@ -74,8 +74,9 @@ void writeDatablock(filesystem &filesystem_data, int32_t * datablock, std::ifstr
     fs_file.write(reinterpret_cast<const char *>(&bitmap_byte), sizeof(bitmap_byte));    // zapise upravenou bitmapu
     // aktualizace dat
     fs_file.seekp(filesystem_data.super_block.data_start_address + (position_absolute * filesystem_data.super_block.cluster_size));
-    fs_file.write(reinterpret_cast<const char *>(&buffer), filesystem_data.super_block.cluster_size);
-    memset(buffer, 0, filesystem_data.super_block.cluster_size);        // vymaze obsah bufferu
+    fs_file.write(buffer, filesystem_data.super_block.cluster_size);
+
+    memset(buffer, EOF, filesystem_data.super_block.cluster_size);        // vymaze obsah bufferu
 }
 
 /**
@@ -146,6 +147,9 @@ void inputCopy(filesystem &filesystem_data, std::string &input, std::string &loc
     char buffer[filesystem_data.super_block.cluster_size];
     int32_t datablock[4];
 
+    // vymaze obsah bufferu
+    memset(buffer, EOF, filesystem_data.super_block.cluster_size);
+
     // 1P - prvni datablock
     writeDatablock(filesystem_data,datablock,cpin_file,fs_file,buffer);
     inode.direct1 = filesystem_data.super_block.data_start_address + (datablock[0] * filesystem_data.super_block.cluster_size);;
@@ -185,7 +189,7 @@ void inputCopy(filesystem &filesystem_data, std::string &input, std::string &loc
 
     // 1N - prvni neprimy
     int32_t links[links_per_cluster];
-    for(int i = 0; i < dirs_per_cluster; i++) {
+    for(int i = 0; i < links_per_cluster; i++) {
         links[i] = 0;
     }
 
@@ -227,7 +231,7 @@ void inputCopy(filesystem &filesystem_data, std::string &input, std::string &loc
 
 
 
-
+    inode.file_size = writed;
     //while(filesize > writed) {
 
     //}

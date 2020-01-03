@@ -11,6 +11,7 @@
 #include "inode.h"
 #include "directory.h"
 #include "datablock.h"
+#include "cat.h"
 #include <sys/stat.h>
 #include <cstdio>
 
@@ -148,6 +149,7 @@ void formatFS(int size) {
     inode.direct5 = 0;
     inode.indirect1 = 0;
     inode.indirect2 = 0;
+    inode.file_size = filesystem_data.super_block.cluster_size;
 
     // aktualni adresar
     dir = getDirectory(inode.nodeid, ".");
@@ -264,6 +266,7 @@ void mkdir(std::string &dir_name) {
     inode.direct5 = 0;
     inode.indirect1 = 0;
     inode.indirect2 = 0;
+    inode.file_size = filesystem_data.super_block.cluster_size;
     input_file.write(reinterpret_cast<const char *>(&inode), sizeof(pseudo_inode));
 
     // aktualni adresar
@@ -334,9 +337,13 @@ void ls() {
         directory_item directories[dirs_per_cluster];
 
         input_file.read(reinterpret_cast<char *>(&directories), sizeof(directories));
+        std::cout << "#" << "\t"<< "ND" << "\t" << "NAME" << "\t" << "SIZE" << std::endl;
         for(int i = 0; i < dirs_per_cluster; i++) {
             if(directories[i].inode) {
-                std::cout << i << "\t"<< directories[i].inode << "\t" << directories[i].item_name << std::endl;
+                pseudo_inode inode;
+                input_file.seekp(filesystem_data.super_block.inode_start_address + (directories[i].inode-1) * sizeof(pseudo_inode));
+                input_file.read(reinterpret_cast<char *>(&inode), sizeof(pseudo_inode));
+                std::cout << i << "\t"<< directories[i].inode << "\t" << directories[i].item_name << "\t" << inode.file_size << std::endl;
             }
         }
     }
@@ -441,6 +448,8 @@ int main(int argc, char **argv) {
             } else {
                 cd(cmd[1]);
             }
+        }  else if (cmd.size() > 1 && cmd[0] == "cat") {
+            cat(filesystem_data, cmd[1]);
         } else if (input_string == "q") {
             std::cout << "Konec" << std::endl;
             return 0;
