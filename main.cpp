@@ -13,6 +13,7 @@
 #include "datablock.h"
 #include "cat.h"
 #include "outcp.h"
+#include "rm.h"
 #include <sys/stat.h>
 #include <cstdio>
 
@@ -447,6 +448,12 @@ int main(int argc, char **argv) {
                 std::cout << "CANNOT CREATE DIRECTORY" << std::endl;
             } else {
                 mkdir(cmd[1]);
+            }
+        } else if (cmd.size() > 0 && cmd[0] == "rmdir") {
+            if (cmd.size() == 1) {
+                std::cout << "rmdir: missing operand" << std::endl;
+            } else {
+                rmdir(filesystem_data, cmd[1]);
             }
         } else if (cmd.size() > 0 && cmd[0] == "incp") {
             if (cmd.size() < 3) {

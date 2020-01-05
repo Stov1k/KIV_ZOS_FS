@@ -83,6 +83,24 @@ void cat(filesystem &filesystem_data, std::string &s1) {
                 }
             }
         }
+        if (inode.indirect2 != 0) {
+            uint32_t links_per_cluster = filesystem_data.super_block.cluster_size / sizeof(int32_t);
+            int32_t links[links_per_cluster];
+            fs_file.seekp(inode.indirect2);
+            fs_file.read(reinterpret_cast<char *>(&links), sizeof(links));
+            for (int i = 0; i < links_per_cluster; i++) {
+                if (links[i] != 0) {
+                    int32_t sublinks[links_per_cluster];
+                    fs_file.seekp(links[i]);
+                    fs_file.read(reinterpret_cast<char *>(&sublinks), sizeof(sublinks));
+                    for (int j = 0; j < links_per_cluster; j++) {
+                        if (sublinks[j] != 0) {
+                            readDataBlock(filesystem_data, fs_file, sublinks[j]);
+                        }
+                    }
+                }
+            }
+        }
 
         std::cout << std::endl;
 
