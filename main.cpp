@@ -455,6 +455,12 @@ int main(int argc, char **argv) {
             } else {
                 rmdir(filesystem_data, cmd[1]);
             }
+        } else if (cmd.size() > 0 && cmd[0] == "rm") {
+            if (cmd.size() == 1) {
+                std::cout << "rm: missing operand" << std::endl;
+            } else {
+                rm(filesystem_data, cmd[1]);
+            }
         } else if (cmd.size() > 0 && cmd[0] == "incp") {
             if (cmd.size() < 3) {
                 std::cout << "PATH NOT FOUND" << std::endl;

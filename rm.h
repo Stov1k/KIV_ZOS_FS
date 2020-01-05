@@ -14,4 +14,11 @@
  */
 void rmdir(filesystem &filesystem_data, std::string &a1);
 
+/**
+ * Smaze soubor s1
+ * @param filesystem_data fileszystem
+ * @param s1 nazev souboru
+ */
+void rm(filesystem &filesystem_data, std::string &a1);
+
 #endif //ZOSFS_RM_H

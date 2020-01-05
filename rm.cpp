@@ -281,6 +281,63 @@ void removeDatablockPositionInBitmap(filesystem &filesystem_data, std::fstream &
 }
 
 /**
+ * Uvolni v bitmape databloky souboru
+ * @param filesystem_data filesystem
+ * @param fs_file otevreny soubor filesystemu
+ * @param inode soubor
+ */
+void removeDatablocksPositionInBitmap(filesystem &filesystem_data, std::fstream &fs_file, pseudo_inode &inode) {
+    // odstraneni databloku
+    if (inode.direct1 != 0) {
+        removeDatablockPositionInBitmap(filesystem_data, fs_file, inode.direct1);
+    }
+    if (inode.direct2 != 0) {
+        removeDatablockPositionInBitmap(filesystem_data, fs_file, inode.direct2);
+    }
+    if (inode.direct3 != 0) {
+        removeDatablockPositionInBitmap(filesystem_data, fs_file, inode.direct3);
+    }
+    if (inode.direct4 != 0) {
+        removeDatablockPositionInBitmap(filesystem_data, fs_file, inode.direct4);
+    }
+    if (inode.direct5 != 0) {
+        removeDatablockPositionInBitmap(filesystem_data, fs_file, inode.direct5);
+    }
+    if (inode.indirect1 != 0) {
+        uint32_t links_per_cluster = filesystem_data.super_block.cluster_size / sizeof(int32_t);
+        int32_t links[links_per_cluster];
+        fs_file.seekp(inode.indirect1);
+        fs_file.read(reinterpret_cast<char *>(&links), sizeof(links));
+        for (int i = 0; i < links_per_cluster; i++) {
+            if (links[i] != 0) {
+                removeDatablockPositionInBitmap(filesystem_data, fs_file, links[i]);
+            }
+        }
+        removeDatablockPositionInBitmap(filesystem_data, fs_file, inode.indirect1);
+    }
+    if (inode.indirect2 != 0) {
+        uint32_t links_per_cluster = filesystem_data.super_block.cluster_size / sizeof(int32_t);
+        int32_t links[links_per_cluster];
+        fs_file.seekp(inode.indirect2);
+        fs_file.read(reinterpret_cast<char *>(&links), sizeof(links));
+        for (int i = 0; i < links_per_cluster; i++) {
+            if (links[i] != 0) {
+                int32_t sublinks[links_per_cluster];
+                fs_file.seekp(links[i]);
+                fs_file.read(reinterpret_cast<char *>(&sublinks), sizeof(sublinks));
+                for (int j = 0; j < links_per_cluster; j++) {
+                    if (sublinks[j] != 0) {
+                        removeDatablockPositionInBitmap(filesystem_data, fs_file, sublinks[j]);
+                    }
+                }
+                removeDatablockPositionInBitmap(filesystem_data, fs_file, links[i]);
+            }
+        }
+        removeDatablockPositionInBitmap(filesystem_data, fs_file, inode.indirect2);
+    }
+}
+
+/**
  * Uvolni inode
  * @param filesystem_data filesystem
  * @param fs_file otevreny soubor filesystemu
@@ -334,16 +391,15 @@ void rmdir(filesystem &filesystem_data, std::string &a1) {
         inode = *inode_ptr;
         bool empty = isDirectoryEmpty(filesystem_data, fs_file, inode);
         if(empty) {
-            std::cout << "OK" << std::endl;
             pseudo_inode * parrent_ptr = getParrentDirectory(filesystem_data, fs_file, inode);
             pseudo_inode parrent;
             if (parrent_ptr != nullptr) {
                 parrent = *parrent_ptr;
-
                 if(parrent.nodeid != inode.nodeid) {
                     removeLinkInParrentDir(filesystem_data, fs_file, inode, parrent);
                     removeDatablockPositionInBitmap(filesystem_data, fs_file, inode.direct1);
                     removeINode(filesystem_data, fs_file, inode);
+                    std::cout << "OK" << std::endl;
                 } else {
                     std::cout << "ROOT CANNOT BE REMOVED" << std::endl;
                 }
@@ -351,6 +407,46 @@ void rmdir(filesystem &filesystem_data, std::string &a1) {
         } else {
             std::cout << "NOT EMPTY" << std::endl;
         }
+    } else {
+        std::cout << "FILE NOT FOUND" << std::endl;
+    }
+
+    fs_file.close();
+}
+
+/**
+ * Smaze soubor s1
+ * @param filesystem_data fileszystem
+ * @param s1 nazev souboru
+ */
+void rm(filesystem &filesystem_data, std::string &a1) {
+    std::fstream fs_file;
+    fs_file.open(filesystem_data.fs_file, std::ios::in | std::ios::out | std::ios::binary);
+
+    pseudo_inode * inode_ptr = nullptr;
+    pseudo_inode inode;
+
+    // zjistim, zdali existuje soubor stejneho nazvu
+    std::vector<directory_item> directories = getDirectories(filesystem_data);
+    for (auto &directory : directories) {
+        directory.item_name;
+        if (strcmp(a1.c_str(), directory.item_name) == 0) {
+            fs_file.seekp(filesystem_data.super_block.inode_start_address + (directory.inode - 1) * sizeof(pseudo_inode));
+            fs_file.read(reinterpret_cast<char *>(&inode), sizeof(pseudo_inode));
+            if (!inode.isDirectory) {
+                inode_ptr = &inode;
+            }
+            break;
+        }
+    }
+
+    if (inode_ptr != nullptr) {
+        inode = *inode_ptr;
+        removeLinkInParrentDir(filesystem_data, fs_file, inode, filesystem_data.current_dir);
+        removeDatablocksPositionInBitmap(filesystem_data, fs_file, inode);
+        removeINode(filesystem_data, fs_file, inode);
+        std::cout << "OK" << std::endl;
+
     } else {
         std::cout << "FILE NOT FOUND" << std::endl;
     }
