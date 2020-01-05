@@ -62,8 +62,16 @@ long getFilesize(std::string &filename) {
     return rc == 0 ? stat_buf.st_size : -1;
 }
 
-void writeDatablock(filesystem &filesystem_data, int32_t *datablock, std::ifstream &cpin_file, std::fstream &fs_file,
-                    char *buffer) {
+/**
+ * Zapis dat z pevneho disku do filesystemu
+ * @param filesystem_data filesystem
+ * @param datablock datablok
+ * @param cpin_file otevreny soubor na pevnem disku
+ * @param fs_file otevreny soubor filesystemu
+ * @param buffer
+ * @return pozice
+ */
+int32_t writeDatablock(filesystem &filesystem_data, int32_t *datablock, std::ifstream &cpin_file, std::fstream &fs_file, char *buffer) {
     // ziskani datablocku
     getFreeDatablock(filesystem_data, datablock);
     int32_t position_absolute = datablock[0];
@@ -71,15 +79,52 @@ void writeDatablock(filesystem &filesystem_data, int32_t *datablock, std::ifstre
     uint8_t bitmap_byte = (uint8_t) datablock[2];
     // nacteni dat do bufferu k zapisu
     cpin_file.read(buffer, filesystem_data.super_block.cluster_size);
+
     // aktualizace bitmapy
     fs_file.seekp(filesystem_data.super_block.bitmap_start_address + position_byte); // skoci na bitmapu
     fs_file.write(reinterpret_cast<const char *>(&bitmap_byte), sizeof(bitmap_byte));    // zapise upravenou bitmapu
+
     // aktualizace dat
-    fs_file.seekp(filesystem_data.super_block.data_start_address +
-                  (position_absolute * filesystem_data.super_block.cluster_size));
+    int32_t datablock_position = filesystem_data.super_block.data_start_address + (position_absolute * filesystem_data.super_block.cluster_size);
+    fs_file.seekp(datablock_position);
     fs_file.write(buffer, filesystem_data.super_block.cluster_size);
 
     memset(buffer, EOF, filesystem_data.super_block.cluster_size);        // vymaze obsah bufferu
+
+    return datablock_position;
+}
+
+/**
+ * Vytvoreni datablocku neprimych odkazu
+ * @param filesystem_data filesystem
+ * @param links_per_cluster pocet odkazu na datablock
+ * @param cpin_file otevreny soubor na pevnem disku
+ * @param fs_file otevreny soubor filesystemu
+ * @return pozice
+ */
+int32_t createIndirectDatablock(filesystem &filesystem_data, uint32_t links_per_cluster, std::ifstream &cpin_file, std::fstream &fs_file) {
+    int32_t links[links_per_cluster];
+    for (int i = 0; i < links_per_cluster; i++) {
+        links[i] = 0;
+    }
+
+    // ziskani datablocku (odkazy)
+    int32_t datablock[4];
+    getFreeDatablock(filesystem_data, datablock);
+    int32_t position_absolute = datablock[0];
+    int32_t position_byte = datablock[3];           // poradi bytu v bitmape
+    uint8_t bitmap_byte = (uint8_t) datablock[2];
+
+    // aktualizace bitmapy (odkazy)
+    fs_file.seekp(filesystem_data.super_block.bitmap_start_address + position_byte); // skoci na bitmapu
+    fs_file.write(reinterpret_cast<const char *>(&bitmap_byte), sizeof(bitmap_byte));    // zapise upravenou bitmapu
+
+    // aktualizace dat (odkazy)
+    int32_t datablock_position = filesystem_data.super_block.data_start_address + (datablock[0] * filesystem_data.super_block.cluster_size);
+    fs_file.seekp(datablock_position);
+    fs_file.write(reinterpret_cast<const char *>(&links), filesystem_data.super_block.cluster_size);
+
+    return datablock_position;
 }
 
 /**
@@ -154,92 +199,96 @@ void inputCopy(filesystem &filesystem_data, std::string &input, std::string &loc
     memset(buffer, EOF, filesystem_data.super_block.cluster_size);
 
     // 1P - prvni datablock
-    writeDatablock(filesystem_data, datablock, cpin_file, fs_file, buffer);
-    inode.direct1 =
-            filesystem_data.super_block.data_start_address + (datablock[0] * filesystem_data.super_block.cluster_size);;
-    writed += sizeof(buffer);
+    if (writed < filesize) {
+        inode.direct1 = writeDatablock(filesystem_data, datablock, cpin_file, fs_file, buffer);
+        writed += sizeof(buffer);
+    }
 
     // 2P - druhy datablock
     if (writed < filesize) {
-        writeDatablock(filesystem_data, datablock, cpin_file, fs_file, buffer);
-        inode.direct2 = filesystem_data.super_block.data_start_address +
-                        (datablock[0] * filesystem_data.super_block.cluster_size);
+        inode.direct2 = writeDatablock(filesystem_data, datablock, cpin_file, fs_file, buffer);
         writed += sizeof(buffer);
     }
 
     // 3P - treti datablock
     if (writed < filesize) {
-        writeDatablock(filesystem_data, datablock, cpin_file, fs_file, buffer);
-        inode.direct3 = filesystem_data.super_block.data_start_address +
-                        (datablock[0] * filesystem_data.super_block.cluster_size);
+        inode.direct3 = writeDatablock(filesystem_data, datablock, cpin_file, fs_file, buffer);
         writed += sizeof(buffer);
     }
 
     // 4P - ctvrty datablock
     if (writed < filesize) {
-        writeDatablock(filesystem_data, datablock, cpin_file, fs_file, buffer);
-        inode.direct4 = filesystem_data.super_block.data_start_address +
-                        (datablock[0] * filesystem_data.super_block.cluster_size);
+        inode.direct4 = writeDatablock(filesystem_data, datablock, cpin_file, fs_file, buffer);
         writed += sizeof(buffer);
     }
 
     // 5P - paty datablock
     if (writed < filesize) {
-        writeDatablock(filesystem_data, datablock, cpin_file, fs_file, buffer);
-        inode.direct5 = filesystem_data.super_block.data_start_address +
-                        (datablock[0] * filesystem_data.super_block.cluster_size);
+        inode.direct5 = writeDatablock(filesystem_data, datablock, cpin_file, fs_file, buffer);
         writed += sizeof(buffer);
     }
 
     // 1N - prvni neprimy
-    int32_t links[links_per_cluster];
-    for (int i = 0; i < links_per_cluster; i++) {
-        links[i] = 0;
-    }
+    if (writed < filesize) {
+        inode.indirect1 = createIndirectDatablock(filesystem_data, links_per_cluster, cpin_file, fs_file);
 
-    // ziskani datablocku
-    getFreeDatablock(filesystem_data, datablock);
-    int32_t position_absolute = datablock[0];
-    int32_t position_byte = datablock[3];           // poradi bytu v bitmape
-    uint8_t bitmap_byte = (uint8_t) datablock[2];
+        int32_t links[links_per_cluster];
+        fs_file.seekp(inode.indirect1);
+        fs_file.read(reinterpret_cast<char *>(&links), sizeof(links));
 
-    // aktualizace bitmapy
-    fs_file.seekp(filesystem_data.super_block.bitmap_start_address + position_byte); // skoci na bitmapu
-    fs_file.write(reinterpret_cast<const char *>(&bitmap_byte), sizeof(bitmap_byte));    // zapise upravenou bitmapu
-    // aktualizace dat
-    fs_file.seekp(filesystem_data.super_block.data_start_address +
-                  (position_absolute * filesystem_data.super_block.cluster_size));
-    fs_file.write(reinterpret_cast<const char *>(&links), filesystem_data.super_block.cluster_size);
+        int iteration = 0;
+        while (writed < filesize && iteration < links_per_cluster) {
+            links[iteration] = writeDatablock(filesystem_data, datablock, cpin_file, fs_file, buffer);
 
-    inode.indirect1 = filesystem_data.super_block.data_start_address +
-                      (datablock[0] * filesystem_data.super_block.cluster_size);
+            // aktualizace odkazu
+            fs_file.seekp(inode.indirect1);
+            fs_file.write(reinterpret_cast<const char *>(&links), filesystem_data.super_block.cluster_size);
 
-
-    int iteration = 0;
-    while (writed < filesize && iteration < links_per_cluster) {
-        writeDatablock(filesystem_data, datablock, cpin_file, fs_file, buffer);
-        links[iteration] = filesystem_data.super_block.data_start_address +
-                           (datablock[0] * filesystem_data.super_block.cluster_size);
-
-        // aktualizace odkazu
-        fs_file.seekp(filesystem_data.super_block.data_start_address +
-                      (position_absolute * filesystem_data.super_block.cluster_size));
-        fs_file.write(reinterpret_cast<const char *>(&links), filesystem_data.super_block.cluster_size);
-
-        std::cout << "POZICE O: " << position_absolute << "POZICE D: " << datablock[0] << std::endl;
-
-        writed += sizeof(buffer);
-        iteration++;
+            writed += sizeof(buffer);
+            iteration++;
+        }
     }
 
     // 2N - druhy neprimy
+    if (writed < filesize) {
+        inode.indirect2 = createIndirectDatablock(filesystem_data, links_per_cluster, cpin_file, fs_file);
 
+        int32_t links[links_per_cluster];
+        fs_file.seekp(inode.indirect2);
+        fs_file.read(reinterpret_cast<char *>(&links), sizeof(links));
+
+        int iteration = 0;
+        while (writed < filesize && iteration < links_per_cluster) {
+            links[iteration] = createIndirectDatablock(filesystem_data, links_per_cluster, cpin_file, fs_file);
+
+            // aktualizace odkazu
+            fs_file.seekp(inode.indirect2);
+            fs_file.write(reinterpret_cast<const char *>(&links), filesystem_data.super_block.cluster_size);
+
+            // nacteni odkazu
+            int32_t sublinks[links_per_cluster];
+            fs_file.seekp(links[iteration]);
+            fs_file.read(reinterpret_cast<char *>(&sublinks), sizeof(sublinks));
+
+            int j = 0;
+            while (writed < filesize && j < links_per_cluster) {
+                sublinks[j] = writeDatablock(filesystem_data, datablock, cpin_file, fs_file, buffer);
+
+                // aktualizace odkazu
+                fs_file.seekp(links[iteration]);
+                fs_file.write(reinterpret_cast<const char *>(&sublinks), filesystem_data.super_block.cluster_size);
+
+                writed += sizeof(buffer);
+                j++;
+            }
+
+            iteration++;
+        }
+
+    }
 
 
     inode.file_size = writed;
-    //while(filesize > writed) {
-
-    //}
 
     // aktualizace podslozek v nadrazenem adresari
     fs_file.seekp(filesystem_data.current_dir.direct1); // skoci na data
@@ -249,7 +298,6 @@ void inputCopy(filesystem &filesystem_data, std::string &input, std::string &loc
     fs_file.seekp(filesystem_data.super_block.inode_start_address + (inode.nodeid - 1) * sizeof(pseudo_inode));
     inode.isDirectory = false;
     inode.references++;
-    inode.indirect2 = 0;
     fs_file.write(reinterpret_cast<const char *>(&inode), sizeof(pseudo_inode));
 
     cpin_file.close();

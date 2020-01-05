@@ -37,9 +37,7 @@ bool getFreeDatablock(filesystem &filesystem_data, int32_t buf[]) {
                 found = true;
                 buf[1] = j;
             }
-            std::cout << j << " " << used << std::endl;
         }
-        std::cout << "Pozice " << buf[1] << std::endl;
 
         // zmena bitu
         if (found) {
@@ -48,7 +46,6 @@ bool getFreeDatablock(filesystem &filesystem_data, int32_t buf[]) {
         unsigned long ul = x.to_ulong();
         unsigned int c = static_cast<unsigned int>(ul);
         bitmap_byte = c;
-        std::cout << x << " pos:" << input_file.tellg() << " Long:" << ul << " Int:" << c << std::endl;
 
         // konec cyklu
         if (found) {

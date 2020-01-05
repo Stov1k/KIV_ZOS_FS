@@ -21,7 +21,7 @@
  */
 void printBuffer(std::fstream &output_file, char buffer[], int32_t len) {
     for (int i = 0; i < len; ++i) {
-        if (buffer[i] == EOF) break;                // TODO: asi hloupa podminka
+        //if (buffer[i] == EOF) break;                // TODO: asi hloupa podminka
         output_file.write(reinterpret_cast<const char *>(&buffer[i]), sizeof(char));
     }
 }
@@ -89,6 +89,26 @@ void outcp(filesystem &filesystem_data, std::string &s1, std::string &s2) {
             for (int i = 0; i < links_per_cluster; i++) {
                 if (links[i] != 0) {
                     readDataBlock(filesystem_data, fs_file, output_file, links[i]);
+                }
+            }
+        }
+        if (inode.indirect2 != 0) {
+            uint32_t links_per_cluster = filesystem_data.super_block.cluster_size / sizeof(int32_t);
+            int32_t links[links_per_cluster];
+            fs_file.seekp(inode.indirect2);
+            fs_file.read(reinterpret_cast<char *>(&links), sizeof(links));
+            for (int i = 0; i < links_per_cluster; i++) {
+                if (links[i] != 0) {
+                    std::cout << i << "\t " << links[i] << std::endl;
+                    int32_t sublinks[links_per_cluster];
+                    fs_file.seekp(links[i]);
+                    fs_file.read(reinterpret_cast<char *>(&sublinks), sizeof(sublinks));
+                    for (int j = 0; j < links_per_cluster; j++) {
+                        if (sublinks[j] != 0) {
+                            std::cout << j << "\t " << links[j] << std::endl;
+                            readDataBlock(filesystem_data, fs_file, output_file, sublinks[j]);
+                        }
+                    }
                 }
             }
         }
