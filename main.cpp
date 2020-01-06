@@ -14,6 +14,7 @@
 #include "cat.h"
 #include "outcp.h"
 #include "rm.h"
+#include "info.h"
 #include <sys/stat.h>
 #include <cstdio>
 
@@ -313,7 +314,6 @@ void cd(std::string &dir_name) {
     // zjistim, zdali existuje adresar stejneho nazvu
     std::vector<directory_item> directories = getDirectories(filesystem_data);
     for (auto &directory : directories) {
-        directory.item_name;
         if (strcmp(dir_name.c_str(), directory.item_name) == 0) {
             input_file.seekp(
                     filesystem_data.super_block.inode_start_address + (directory.inode - 1) * sizeof(pseudo_inode));
@@ -460,6 +460,12 @@ int main(int argc, char **argv) {
                 std::cout << "rm: missing operand" << std::endl;
             } else {
                 rm(filesystem_data, cmd[1]);
+            }
+        } else if (cmd.size() > 0 && cmd[0] == "info") {
+            if (cmd.size() == 1) {
+                std::cout << "info: missing operand" << std::endl;
+            } else {
+                info(filesystem_data, cmd[1]);
             }
         } else if (cmd.size() > 0 && cmd[0] == "incp") {
             if (cmd.size() < 3) {

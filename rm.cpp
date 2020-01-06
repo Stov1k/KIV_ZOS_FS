@@ -376,7 +376,6 @@ void rmdir(filesystem &filesystem_data, std::string &a1) {
     // zjistim, zdali existuje adresar stejneho nazvu
     std::vector<directory_item> directories = getDirectories(filesystem_data);
     for (auto &directory : directories) {
-        directory.item_name;
         if (strcmp(a1.c_str(), directory.item_name) == 0) {
             fs_file.seekp(filesystem_data.super_block.inode_start_address + (directory.inode - 1) * sizeof(pseudo_inode));
             fs_file.read(reinterpret_cast<char *>(&inode), sizeof(pseudo_inode));
@@ -388,7 +387,7 @@ void rmdir(filesystem &filesystem_data, std::string &a1) {
     }
 
     if (inode_ptr != nullptr) {
-        inode = *inode_ptr;
+        inode = *inode_ptr;     // TODO: asi uz nastavene, mozno smazat
         bool empty = isDirectoryEmpty(filesystem_data, fs_file, inode);
         if(empty) {
             pseudo_inode * parrent_ptr = getParrentDirectory(filesystem_data, fs_file, inode);
@@ -429,7 +428,6 @@ void rm(filesystem &filesystem_data, std::string &a1) {
     // zjistim, zdali existuje soubor stejneho nazvu
     std::vector<directory_item> directories = getDirectories(filesystem_data);
     for (auto &directory : directories) {
-        directory.item_name;
         if (strcmp(a1.c_str(), directory.item_name) == 0) {
             fs_file.seekp(filesystem_data.super_block.inode_start_address + (directory.inode - 1) * sizeof(pseudo_inode));
             fs_file.read(reinterpret_cast<char *>(&inode), sizeof(pseudo_inode));
@@ -441,7 +439,7 @@ void rm(filesystem &filesystem_data, std::string &a1) {
     }
 
     if (inode_ptr != nullptr) {
-        inode = *inode_ptr;
+        inode = *inode_ptr;     // TODO: asi uz nastavene, mozno smazat
         removeLinkInParrentDir(filesystem_data, fs_file, inode, filesystem_data.current_dir);
         removeDatablocksPositionInBitmap(filesystem_data, fs_file, inode);
         removeINode(filesystem_data, fs_file, inode);
