@@ -16,6 +16,7 @@
 #include "rm.h"
 #include "info.h"
 #include "pwd.h"
+#include "cd.h"
 #include <sys/stat.h>
 #include <cstdio>
 
@@ -305,35 +306,6 @@ void mkdir(std::string &dir_name) {
 }
 
 /**
- * Prikaz cd
- * @param dir_name nazev adresare
- */
-void cd(std::string &dir_name) {
-    std::fstream input_file;
-    input_file.open(filesystem_data.fs_file, std::ios::in | std::ios::out | std::ios::binary);
-
-    // zjistim, zdali existuje adresar stejneho nazvu
-    std::vector<directory_item> directories = getDirectories(filesystem_data);
-    for (auto &directory : directories) {
-        if (strcmp(dir_name.c_str(), directory.item_name) == 0) {
-            input_file.seekp(
-                    filesystem_data.super_block.inode_start_address + (directory.inode - 1) * sizeof(pseudo_inode));
-            pseudo_inode dir_inode;
-            input_file.read(reinterpret_cast<char *>(&dir_inode), sizeof(pseudo_inode));
-            if (dir_inode.isDirectory) {
-                filesystem_data.current_dir = dir_inode;
-                std::cout << "OK" << std::endl;
-            } else {
-                std::cout << "FILE IS NOT DIRECTORY" << std::endl;
-            }
-            break;
-        }
-    }
-
-    input_file.close();
-}
-
-/**
  * Prikaz ls: vypise obsah aktualniho adresare
  */
 void ls() {
@@ -487,7 +459,7 @@ int main(int argc, char **argv) {
                 filesystem_data.current_dir = filesystem_data.root_dir;
                 std::cout << "OK" << std::endl;
             } else {
-                cd(cmd[1]);
+                cd(filesystem_data, cmd[1]);
             }
         } else if (cmd.size() > 1 && cmd[0] == "cat") {
             cat(filesystem_data, cmd[1]);

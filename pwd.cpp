@@ -22,7 +22,6 @@ std::string getDirectoryName(filesystem &filesystem_data, std::fstream &fs_file,
     uint32_t dirs_per_cluster = filesystem_data.super_block.cluster_size / sizeof(directory_item);
     directory_item directories[dirs_per_cluster];
 
-    // odstraneni referenci
     if (parrent.direct1 != 0) {
         fs_file.seekp(parrent.direct1);
         fs_file.read(reinterpret_cast<char *>(&directories), sizeof(directories));
