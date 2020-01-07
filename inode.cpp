@@ -10,6 +10,17 @@
 #include "directory.h"
 
 /**
+ * Vrati pozici inodu v souboru podle poradi inodu
+ * @param filesystem_data filesystem
+ * @param inode_no poradi inodu
+ * @return pozice v souboru fs
+ */
+int32_t getINodePosition(filesystem &filesystem_data, int32_t inode_no) {
+    return filesystem_data.super_block.inode_start_address +
+           (inode_no - 1) * sizeof(pseudo_inode);
+}
+
+/**
  * Vrati volny inode
  * @return inode
  */

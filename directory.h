@@ -37,4 +37,13 @@ bool isDirectoryExists(filesystem &filesystem_data, directory_item &dir);
  */
 directory_item getDirectory(int32_t nodeid, std::string name);
 
+/**
+ * Vrati nadrazeny adresar
+ * @param filesystem_data filesystem
+ * @param fs_file otevreny soubor filesystemu
+ * @param inode adresar
+ * @return nadrazeny adresar
+ */
+pseudo_inode * getParrentDirectory(filesystem &filesystem_data, std::fstream &fs_file, pseudo_inode &inode);
+
 #endif //ZOSFS_DIRECTORY_H

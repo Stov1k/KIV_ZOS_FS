@@ -15,6 +15,7 @@
 #include "outcp.h"
 #include "rm.h"
 #include "info.h"
+#include "pwd.h"
 #include <sys/stat.h>
 #include <cstdio>
 
@@ -443,6 +444,8 @@ int main(int argc, char **argv) {
                                      filesystem_data.super_block.bitmap_start_address);
             std::cout << "Obsah " << bitmap_size_bytes << std::endl;
             ls();
+        } else if (cmd.size() > 0 && cmd[0] == "pwd") {
+            pwd(filesystem_data);
         } else if (cmd.size() > 0 && cmd[0] == "mkdir") {
             if (cmd.size() == 1) {
                 std::cout << "CANNOT CREATE DIRECTORY" << std::endl;

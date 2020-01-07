@@ -8,6 +8,14 @@
 #include "zosfsstruct.h"
 
 /**
+ * Vrati pozici inodu v souboru podle poradi inodu
+ * @param filesystem_data filesystem
+ * @param inode_no poradi inodu
+ * @return pozice v souboru fs
+ */
+int32_t getINodePosition(filesystem &filesystem_data, int32_t inode_no);
+
+/**
  * Vrati volny inode
  * @return inode
  */

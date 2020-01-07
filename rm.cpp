@@ -9,44 +9,7 @@
 #include "rm.h"
 #include "zosfsstruct.h"
 #include "directory.h"
-
-/**
- * Vrati pozici inodu v souboru podle poradi inodu
- * @param filesystem_data filesystem
- * @param inode_no poradi inodu
- * @return pozice v souboru fs
- */
-int32_t getINodePosition(filesystem &filesystem_data, int32_t inode_no) {
-    return filesystem_data.super_block.inode_start_address +
-           (inode_no - 1) * sizeof(pseudo_inode);
-}
-
-/**
- * Vrati nadrazeny adresar
- * @param filesystem_data filesystem
- * @param fs_file otevreny soubor filesystemu
- * @param inode adresar
- * @return nadrazeny adresar
- */
-pseudo_inode * getParrentDirectory(filesystem &filesystem_data, std::fstream &fs_file, pseudo_inode &inode) {
-
-    uint32_t dirs_per_cluster = filesystem_data.super_block.cluster_size / sizeof(directory_item);
-    directory_item directories[dirs_per_cluster];
-
-    pseudo_inode parrent;
-    pseudo_inode * parrent_ptr = nullptr;
-
-    if (inode.direct1 != 0) {
-        fs_file.seekp(inode.direct1);
-        fs_file.read(reinterpret_cast<char *>(&directories), sizeof(directories));
-        std::cout << directories[1].inode << std::endl;
-        fs_file.seekp(getINodePosition(filesystem_data, directories[1].inode));
-        fs_file.read(reinterpret_cast<char *>(&parrent), sizeof(parrent));
-        parrent_ptr = &parrent;
-    }
-
-    return parrent_ptr;
-}
+#include "inode.h"
 
 /**
  * Vrati, zdali adresar je prazdny
