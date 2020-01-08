@@ -71,7 +71,8 @@ long getFilesize(std::string &filename) {
  * @param buffer
  * @return pozice
  */
-int32_t writeDatablock(filesystem &filesystem_data, int32_t *datablock, std::ifstream &cpin_file, std::fstream &fs_file, char *buffer) {
+int32_t writeDatablock(filesystem &filesystem_data, int32_t *datablock, std::ifstream &cpin_file, std::fstream &fs_file,
+                       char *buffer) {
     // ziskani datablocku
     getFreeDatablock(filesystem_data, datablock);
     int32_t position_absolute = datablock[0];
@@ -85,7 +86,8 @@ int32_t writeDatablock(filesystem &filesystem_data, int32_t *datablock, std::ifs
     fs_file.write(reinterpret_cast<const char *>(&bitmap_byte), sizeof(bitmap_byte));    // zapise upravenou bitmapu
 
     // aktualizace dat
-    int32_t datablock_position = filesystem_data.super_block.data_start_address + (position_absolute * filesystem_data.super_block.cluster_size);
+    int32_t datablock_position = filesystem_data.super_block.data_start_address +
+                                 (position_absolute * filesystem_data.super_block.cluster_size);
     fs_file.seekp(datablock_position);
     fs_file.write(buffer, filesystem_data.super_block.cluster_size);
 
@@ -102,7 +104,8 @@ int32_t writeDatablock(filesystem &filesystem_data, int32_t *datablock, std::ifs
  * @param fs_file otevreny soubor filesystemu
  * @return pozice
  */
-int32_t createIndirectDatablock(filesystem &filesystem_data, uint32_t links_per_cluster, std::ifstream &cpin_file, std::fstream &fs_file) {
+int32_t createIndirectDatablock(filesystem &filesystem_data, uint32_t links_per_cluster, std::ifstream &cpin_file,
+                                std::fstream &fs_file) {
     int32_t links[links_per_cluster];
     for (int i = 0; i < links_per_cluster; i++) {
         links[i] = 0;
@@ -120,7 +123,8 @@ int32_t createIndirectDatablock(filesystem &filesystem_data, uint32_t links_per_
     fs_file.write(reinterpret_cast<const char *>(&bitmap_byte), sizeof(bitmap_byte));    // zapise upravenou bitmapu
 
     // aktualizace dat (odkazy)
-    int32_t datablock_position = filesystem_data.super_block.data_start_address + (datablock[0] * filesystem_data.super_block.cluster_size);
+    int32_t datablock_position =
+            filesystem_data.super_block.data_start_address + (datablock[0] * filesystem_data.super_block.cluster_size);
     fs_file.seekp(datablock_position);
     fs_file.write(reinterpret_cast<const char *>(&links), filesystem_data.super_block.cluster_size);
 
@@ -147,14 +151,7 @@ void inputCopy(filesystem &filesystem_data, std::string &input, std::string &loc
 
     // potreba volnych datablocku
     uint32_t links_per_cluster = filesystem_data.super_block.cluster_size / sizeof(int32_t);
-    double datablock_needed = (double) (filesize) / (double) (filesystem_data.super_block.cluster_size);
-    if (datablock_needed <= 5.0) {
-
-    } else if (datablock_needed <= (links_per_cluster + 5.0)) {
-
-    } else {
-
-    }
+    //double datablock_needed = (double) (filesize) / (double) (filesystem_data.super_block.cluster_size);  // TODO: Udelat vypocet potreby databloku
 
     // zjisti dostupnou velikost // TODO: predelat podle volnych datablocku?
     long free_space = countFreeDatablock(filesystem_data);

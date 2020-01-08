@@ -44,6 +44,6 @@ directory_item getDirectory(int32_t nodeid, std::string name);
  * @param inode adresar
  * @return nadrazeny adresar
  */
-pseudo_inode * getParrentDirectory(filesystem &filesystem_data, std::fstream &fs_file, pseudo_inode &inode);
+pseudo_inode *getParrentDirectory(filesystem &filesystem_data, std::fstream &fs_file, pseudo_inode &inode);
 
 #endif //ZOSFS_DIRECTORY_H

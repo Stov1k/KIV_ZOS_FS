@@ -74,7 +74,7 @@ void info(filesystem &filesystem_data, std::string &name) {
     std::fstream fs_file;
     fs_file.open(filesystem_data.fs_file, std::ios::in | std::ios::out | std::ios::binary);
 
-    pseudo_inode * inode_ptr = nullptr;
+    pseudo_inode *inode_ptr = nullptr;
     pseudo_inode inode;
     std::string dir_name;
 
@@ -83,7 +83,8 @@ void info(filesystem &filesystem_data, std::string &name) {
     for (auto &directory : directories) {
         if (strcmp(name.c_str(), directory.item_name) == 0) {
             dir_name = directory.item_name;
-            fs_file.seekp(filesystem_data.super_block.inode_start_address + (directory.inode - 1) * sizeof(pseudo_inode));
+            fs_file.seekp(
+                    filesystem_data.super_block.inode_start_address + (directory.inode - 1) * sizeof(pseudo_inode));
             fs_file.read(reinterpret_cast<char *>(&inode), sizeof(pseudo_inode));
             inode_ptr = &inode;
             break;

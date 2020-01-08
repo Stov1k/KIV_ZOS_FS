@@ -17,7 +17,8 @@
  * @param inode adresar
  * @param parrent nadadresar
  */
-std::string getDirectoryName(filesystem &filesystem_data, std::fstream &fs_file, pseudo_inode &inode, pseudo_inode &parrent) {
+std::string
+getDirectoryName(filesystem &filesystem_data, std::fstream &fs_file, pseudo_inode &inode, pseudo_inode &parrent) {
     // adresare v datablocku
     uint32_t dirs_per_cluster = filesystem_data.super_block.cluster_size / sizeof(directory_item);
     directory_item directories[dirs_per_cluster];
@@ -145,7 +146,7 @@ void pwd(filesystem &filesystem_data) {
     do {
         current = *getParrentDirectory(filesystem_data, fs_file, current);
         s_path.push(current);
-    } while(current.nodeid != root.nodeid);
+    } while (current.nodeid != root.nodeid);
 
     printStack(filesystem_data, fs_file, s_path);
 

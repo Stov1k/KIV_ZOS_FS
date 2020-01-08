@@ -17,12 +17,12 @@
  * @param path cesta
  * @return segments vektor adresaru
  */
-std::vector<std::string> splitPath(std::string path) {
+std::vector<std::string> splitPath(const std::string path) {
     std::stringstream full_path(path);
     std::string segment;
     std::vector<std::string> segments;
 
-    while(std::getline(full_path, segment, '/')) {
+    while (std::getline(full_path, segment, '/')) {
         segments.push_back(segment);
     }
     return segments;
@@ -42,11 +42,11 @@ void cd(filesystem &filesystem_data, std::string &a1) {
     // vynucene ukonceni cyklu pri neplatne ceste
     int force_break = 0;
     // prochazeni adresarema
-    for(int i = 0; i < segments.size(); i++) {
-        if(i == 0 && segments[i].length() == 0) {   // zadana absolutni cesta
+    for (int i = 0; i < segments.size(); i++) {
+        if (i == 0 && segments[i].length() == 0) {   // zadana absolutni cesta
             filesystem_data.current_dir = filesystem_data.root_dir;
             continue;
-        } else if(i != 0 && segments[i].length() == 0) {    // ignorovani nasobnych lomitek
+        } else if (i != 0 && segments[i].length() == 0) {    // ignorovani nasobnych lomitek
             continue;
         }
         // zjistim, zdali existuje adresar stejneho nazvu
@@ -66,13 +66,13 @@ void cd(filesystem &filesystem_data, std::string &a1) {
                 break;
             }
         }
-        if(force_break) {
+        if (force_break) {
             break;
         }
     }
     // vypsani zpravy
-    if(force_break) {
-        if(force_break == 2) {
+    if (force_break) {
+        if (force_break == 2) {
             std::cout << "FILE IS NOT DIRECTORY" << std::endl;
         } else {
             std::cout << "PATH NOT FOUND" << std::endl;

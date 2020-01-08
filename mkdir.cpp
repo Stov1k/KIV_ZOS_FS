@@ -109,7 +109,7 @@ void mkdir(filesystem &filesystem_data, std::string &a1) {
 
     // aktualizace podslozek v novem adresari
     fs_file.seekp(filesystem_data.super_block.data_start_address +
-                     (position_absolute * filesystem_data.super_block.cluster_size)); // skoci na data
+                  (position_absolute * filesystem_data.super_block.cluster_size)); // skoci na data
     fs_file.write(reinterpret_cast<const char *>(&subdirectories), sizeof(subdirectories));
 
     fs_file.close();
