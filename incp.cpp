@@ -42,7 +42,6 @@ long countFreeDatablock(filesystem &filesystem_data) {
             if (!used) {
                 found = found + 1;
             }
-            std::cout << i << " " << found << std::endl;
         }
     }
 
