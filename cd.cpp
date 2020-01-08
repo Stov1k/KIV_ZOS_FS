@@ -13,27 +13,12 @@
 #include "cd.h"
 
 /**
- * Rozdeleni cesty na adresare
- * @param path cesta
- * @return segments vektor adresaru
- */
-std::vector<std::string> splitPath(const std::string path) {
-    std::stringstream full_path(path);
-    std::string segment;
-    std::vector<std::string> segments;
-
-    while (std::getline(full_path, segment, '/')) {
-        segments.push_back(segment);
-    }
-    return segments;
-}
-
-/**
  * Zmeni aktualni cestu do adresare a1
  * @param filesystem_data filesystem
  * @param a1 nazev adresare
+ * @param verbose vypisovani zprav
  */
-void cd(filesystem &filesystem_data, std::string &a1) {
+void cd(filesystem &filesystem_data, std::string &a1, bool verbose) {
     // cesta rozdelena na adresare
     std::vector<std::string> segments = splitPath(a1);
     // otevreni souboru fs
@@ -71,15 +56,26 @@ void cd(filesystem &filesystem_data, std::string &a1) {
         }
     }
     // vypsani zpravy
-    if (force_break) {
-        if (force_break == 2) {
-            std::cout << "FILE IS NOT DIRECTORY" << std::endl;
+    if(verbose) {
+        if (force_break) {
+            if (force_break == 2) {
+                std::cout << "FILE IS NOT DIRECTORY" << std::endl;
+            } else {
+                std::cout << "PATH NOT FOUND" << std::endl;
+            }
         } else {
-            std::cout << "PATH NOT FOUND" << std::endl;
+            std::cout << "OK" << std::endl;
         }
-    } else {
-        std::cout << "OK" << std::endl;
     }
     // uzavreni souboru fs
     fs_file.close();
+}
+
+/**
+ * Zmeni aktualni cestu do adresare a1
+ * @param filesystem_data filesystem
+ * @param a1 nazev adresare
+ */
+void cd(filesystem &filesystem_data, std::string &a1) {
+    cd(filesystem_data, a1, true);
 }

@@ -298,4 +298,6 @@ void inputCopy(filesystem &filesystem_data, std::string &input, std::string &loc
 
     cpin_file.close();
     fs_file.close();
+
+    std::cout << "OK" << std::endl;
 }

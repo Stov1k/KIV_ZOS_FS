@@ -7,8 +7,25 @@
 #include <vector>
 #include <iostream>
 #include <fstream>
+#include <sstream>
 #include "zosfsstruct.h"
 #include "inode.h"
+
+/**
+ * Rozdeleni cesty na adresare
+ * @param path cesta
+ * @return segments vektor adresaru
+ */
+std::vector<std::string> splitPath(const std::string path) {
+    std::stringstream full_path(path);
+    std::string segment;
+    std::vector<std::string> segments;
+
+    while (std::getline(full_path, segment, '/')) {
+        segments.push_back(segment);
+    }
+    return segments;
+}
 
 /**
  * Vypise adresare

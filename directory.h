@@ -11,6 +11,13 @@
 #include "zosfsstruct.h"
 
 /**
+ * Rozdeleni cesty na adresare
+ * @param path cesta
+ * @return segments vektor adresaru
+ */
+std::vector<std::string> splitPath(const std::string path);
+
+/**
  * Vypise adresare
  * @param directories vektor adresaru
  */
