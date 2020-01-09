@@ -13,7 +13,7 @@
  * @param relocate premisteni se
  * @return reference na inode adresare
  */
-pseudo_inode* cd(filesystem &filesystem_data, std::string &a1, bool verbose, bool relocate);
+pseudo_inode *cd(filesystem &filesystem_data, std::string &a1, bool verbose, bool relocate);
 
 /**
  * Zmeni aktualni cestu do adresare a1

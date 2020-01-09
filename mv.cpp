@@ -12,7 +12,7 @@
 #include "directory.h"
 #include "inode.h"
 
-pseudo_inode* moveTo(filesystem &filesystem_data, std::string &s1) {
+pseudo_inode *moveTo(filesystem &filesystem_data, std::string &s1) {
     // cesta rozdelena na adresare
     std::vector<std::string> segments = splitPath(s1);
     // otevreni souboru fs
@@ -20,12 +20,12 @@ pseudo_inode* moveTo(filesystem &filesystem_data, std::string &s1) {
     fs_file.open(filesystem_data.fs_file, std::ios::in | std::ios::out | std::ios::binary);
 
     // pracovni adresar nad nimz jsou provadeny zmeny
-    pseudo_inode * working_dir_ptr;
+    pseudo_inode *working_dir_ptr;
     pseudo_inode working_dir = filesystem_data.current_dir;
     // vynucene ukonceni cyklu pri neplatne ceste
     int force_break = 0;
     // prochazeni adresarema
-    for (int i = 0; i < segments.size()-1; i++) {
+    for (int i = 0; i < segments.size() - 1; i++) {
         if (i == 0 && segments[i].length() == 0) {   // zadana absolutni cesta
             working_dir = filesystem_data.root_dir;
             continue;
@@ -54,17 +54,17 @@ pseudo_inode* moveTo(filesystem &filesystem_data, std::string &s1) {
         }
     }
     // vypsani zpravy
-        if (force_break) {
-            if (force_break == 2) {
-                std::cout << "FILE IS NOT DIRECTORY" << std::endl;
-            } else {
-                std::cout << "PATH NOT FOUND" << std::endl;
-                working_dir_ptr = nullptr;
-            }
+    if (force_break) {
+        if (force_break == 2) {
+            std::cout << "FILE IS NOT DIRECTORY" << std::endl;
         } else {
-            std::cout << "OK" << std::endl;
-            working_dir_ptr = &working_dir;
+            std::cout << "PATH NOT FOUND" << std::endl;
+            working_dir_ptr = nullptr;
         }
+    } else {
+        std::cout << "OK" << std::endl;
+        working_dir_ptr = &working_dir;
+    }
 
     // uzavreni souboru fs
     fs_file.close();
@@ -83,14 +83,14 @@ void mv(filesystem &filesystem_data, std::string &s1, std::string &s2) {
     std::vector<std::string> s1_segments = splitPath(s1);
     std::vector<std::string> s2_segments = splitPath(s2);
 
-    pseudo_inode* old_path_ptr = moveTo(filesystem_data, s1);
-    pseudo_inode* new_path_ptr = moveTo(filesystem_data, s2);
+    pseudo_inode *old_path_ptr = moveTo(filesystem_data, s1);
+    pseudo_inode *new_path_ptr = moveTo(filesystem_data, s2);
 
     // otevreni souboru fs
     std::fstream fs_file;
     fs_file.open(filesystem_data.fs_file, std::ios::in | std::ios::out | std::ios::binary);
 
-    if(old_path_ptr != nullptr && new_path_ptr != nullptr) {
+    if (old_path_ptr != nullptr && new_path_ptr != nullptr) {
         std::cout << "Old name: " << s1_segments.back() << " New name: " << s2_segments.back() << std::endl;
     }
 

@@ -58,7 +58,7 @@ void cat(filesystem &filesystem_data, std::string &s1) {
         fs_file.open(filesystem_data.fs_file, std::ios::in | std::ios::out | std::ios::binary);
 
         // platne adresy na databloky
-        std::vector<int32_t> addresses = usedDatablockByINode(filesystem_data,fs_file, inode);
+        std::vector<int32_t> addresses = usedDatablockByINode(filesystem_data, fs_file, inode);
 
         // prochazeni adres databloku
         for (auto &address : addresses) {

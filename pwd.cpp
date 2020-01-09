@@ -10,6 +10,7 @@
 #include "zosfsstruct.h"
 #include "inode.h"
 #include "directory.h"
+#include "datablock.h"
 
 /**
  * Vrati nazev adresare v nadrazenem adresari
@@ -18,94 +19,22 @@
  * @param inode adresar
  * @param parrent nadadresar
  */
-std::string getDirectoryName(filesystem &filesystem_data, std::fstream &fs_file, pseudo_inode &inode, pseudo_inode &parrent) {
+std::string
+getDirectoryName(filesystem &filesystem_data, std::fstream &fs_file, pseudo_inode &inode, pseudo_inode &parrent) {
     // adresare v datablocku
     uint32_t dirs_per_cluster = filesystem_data.super_block.cluster_size / sizeof(directory_item);
     directory_item directories[dirs_per_cluster];
 
-    if (parrent.direct1 != 0) {
-        fs_file.seekp(parrent.direct1);
+    // platne adresy na databloky
+    std::vector<int32_t> addresses = usedDatablockByINode(filesystem_data, fs_file, parrent);
+
+    // prochazeni adres databloku
+    for (auto &address : addresses) {
+        fs_file.seekp(address);
         fs_file.read(reinterpret_cast<char *>(&directories), sizeof(directories));
         for (int i = 0; i < dirs_per_cluster; i++) {
             if (directories[i].inode == inode.nodeid) {
                 return directories[i].item_name;
-            }
-        }
-    }
-    if (parrent.direct2 != 0) {
-        fs_file.seekp(parrent.direct2);
-        fs_file.read(reinterpret_cast<char *>(&directories), sizeof(directories));
-        for (int i = 0; i < dirs_per_cluster; i++) {
-            if (directories[i].inode == inode.nodeid) {
-                return directories[i].item_name;
-            }
-        }
-    }
-    if (parrent.direct3 != 0) {
-        fs_file.seekp(parrent.direct3);
-        fs_file.read(reinterpret_cast<char *>(&directories), sizeof(directories));
-        for (int i = 0; i < dirs_per_cluster; i++) {
-            if (directories[i].inode == inode.nodeid) {
-                return directories[i].item_name;
-            }
-        }
-    }
-    if (parrent.direct4 != 0) {
-        fs_file.seekp(parrent.direct4);
-        fs_file.read(reinterpret_cast<char *>(&directories), sizeof(directories));
-        for (int i = 0; i < dirs_per_cluster; i++) {
-            if (directories[i].inode == inode.nodeid) {
-                return directories[i].item_name;
-            }
-        }
-    }
-    if (parrent.direct5 != 0) {
-        fs_file.seekp(parrent.direct5);
-        fs_file.read(reinterpret_cast<char *>(&directories), sizeof(directories));
-        for (int i = 0; i < dirs_per_cluster; i++) {
-            if (directories[i].inode == inode.nodeid) {
-                return directories[i].item_name;
-            }
-        }
-    }
-    if (parrent.indirect1 != 0) {
-        uint32_t links_per_cluster = filesystem_data.super_block.cluster_size / sizeof(int32_t);
-        int32_t links[links_per_cluster];
-        fs_file.seekp(parrent.indirect1);
-        fs_file.read(reinterpret_cast<char *>(&links), sizeof(links));
-        for (int i = 0; i < links_per_cluster; i++) {
-            if (links[i] != 0) {
-                fs_file.seekp(links[i]);
-                fs_file.read(reinterpret_cast<char *>(&directories), sizeof(directories));
-                for (int i = 0; i < dirs_per_cluster; i++) {
-                    if (directories[i].inode == inode.nodeid) {
-                        return directories[i].item_name;
-                    }
-                }
-            }
-        }
-    }
-    if (parrent.indirect2 != 0) {
-        uint32_t links_per_cluster = filesystem_data.super_block.cluster_size / sizeof(int32_t);
-        int32_t links[links_per_cluster];
-        fs_file.seekp(parrent.indirect2);
-        fs_file.read(reinterpret_cast<char *>(&links), sizeof(links));
-        for (int i = 0; i < links_per_cluster; i++) {
-            if (links[i] != 0) {
-                int32_t sublinks[links_per_cluster];
-                fs_file.seekp(links[i]);
-                fs_file.read(reinterpret_cast<char *>(&sublinks), sizeof(sublinks));
-                for (int j = 0; j < links_per_cluster; j++) {
-                    if (sublinks[j] != 0) {
-                        fs_file.seekp(sublinks[j]);
-                        fs_file.read(reinterpret_cast<char *>(&directories), sizeof(directories));
-                        for (int i = 0; i < dirs_per_cluster; i++) {
-                            if (directories[i].inode == inode.nodeid) {
-                                return directories[i].item_name;
-                            }
-                        }
-                    }
-                }
             }
         }
     }

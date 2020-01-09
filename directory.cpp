@@ -64,7 +64,7 @@ std::vector<directory_item> getDirectories(filesystem &filesystem_data, pseudo_i
     directory_item dirs_array[dirs_per_cluster];
 
     // platne adresy na databloky
-    std::vector<int32_t> addresses = usedDatablockByINode(filesystem_data,fs_file, working_dir);
+    std::vector<int32_t> addresses = usedDatablockByINode(filesystem_data, fs_file, working_dir);
 
     // prochazeni adres databloku
     for (auto &address : addresses) {

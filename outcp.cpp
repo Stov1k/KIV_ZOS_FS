@@ -34,7 +34,8 @@ void printBuffer(std::fstream &output_file, char buffer[], int32_t len) {
  * @param location pocatecni pozice datablocku
  * @param to_export exportovana cast (musi byt rovna nebo mensi nez cluster_size!)
  */
-void readDataBlock(filesystem &filesystem_data, std::fstream &fs_file, std::fstream &output_file, int32_t location, long to_export) {
+void readDataBlock(filesystem &filesystem_data, std::fstream &fs_file, std::fstream &output_file, int32_t location,
+                   long to_export) {
     // priprava bufferu
     char buffer[to_export];
     memset(buffer, EOF, to_export);
@@ -68,14 +69,14 @@ void outcp(filesystem &filesystem_data, std::string &s1, std::string &s2) {
         output_file.open(s2, std::ios::in | std::ios::out | std::ios::binary);
 
         // platne adresy na databloky
-        std::vector<int32_t> addresses = usedDatablockByINode(filesystem_data,fs_file, inode);
+        std::vector<int32_t> addresses = usedDatablockByINode(filesystem_data, fs_file, inode);
 
         long remaining = inode.file_size;                               // zbyva exportovat bytu
         long to_export = filesystem_data.super_block.cluster_size;      // bude exportovano nasledujici iteraci
 
         // prochazeni adres databloku
         for (auto &address : addresses) {
-            if(to_export > remaining) to_export = remaining;
+            if (to_export > remaining) to_export = remaining;
             readDataBlock(filesystem_data, fs_file, output_file, address, to_export);
             remaining -= to_export;
         }

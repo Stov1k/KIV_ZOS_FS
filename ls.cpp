@@ -12,7 +12,6 @@
 #include "directory.h"
 
 
-
 /**
  * Vypise obsah adresare a1
  * @param filesystem_data filesystem
@@ -23,7 +22,7 @@ void ls(filesystem &filesystem_data, pseudo_inode &a1) {
     fs_file.open(filesystem_data.fs_file, std::ios::in);
 
     // platne adresy na soubory a adresare
-    std::vector<int32_t> addresses = usedDatablockByINode(filesystem_data,fs_file, a1);
+    std::vector<int32_t> addresses = usedDatablockByINode(filesystem_data, fs_file, a1);
 
     // adresare databloku
     uint32_t dirs_per_cluster = dirsPerCluster(filesystem_data);

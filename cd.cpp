@@ -20,7 +20,7 @@
  * @param relocate premisteni se
  * @return reference na inode adresare
  */
-pseudo_inode* cd(filesystem &filesystem_data, std::string &a1, bool verbose, bool relocate) {
+pseudo_inode *cd(filesystem &filesystem_data, std::string &a1, bool verbose, bool relocate) {
     // cesta rozdelena na adresare
     std::vector<std::string> segments = splitPath(a1);
     // otevreni souboru fs
@@ -61,7 +61,7 @@ pseudo_inode* cd(filesystem &filesystem_data, std::string &a1, bool verbose, boo
         }
     }
     // vypsani zpravy
-    if(verbose) {
+    if (verbose) {
         if (force_break) {
             if (force_break == 2) {
                 std::cout << "FILE IS NOT DIRECTORY" << std::endl;
@@ -72,7 +72,7 @@ pseudo_inode* cd(filesystem &filesystem_data, std::string &a1, bool verbose, boo
             std::cout << "OK" << std::endl;
         }
     }
-    if(relocate) {
+    if (relocate) {
         filesystem_data.current_dir = working_dir;
     }
     // uzavreni souboru fs
