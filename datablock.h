@@ -31,4 +31,13 @@ bool getFreeDatablock(filesystem &filesystem_data, int32_t buf[]);
  */
 int32_t createIndirectDatablock(filesystem &filesystem_data, std::fstream &fs_file);
 
+/**
+ * Vrati vector adres pouzitych databloku
+ * @param filesystem_data filesystem
+ * @param fs_file otevreny soubor filesystemu
+ * @param inode
+ * @return vector adres databloku
+ */
+std::vector<int32_t> usedDatablockByINode(filesystem &filesystem_data, std::fstream &fs_file, pseudo_inode inode);
+
 #endif //ZOSFS_DATABLOCK_H

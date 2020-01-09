@@ -60,95 +60,20 @@ std::vector<directory_item> getDirectories(filesystem &filesystem_data, pseudo_i
     std::vector<directory_item> directories;
 
     // pocet adresaru na jeden data blok
-    uint32_t dirs_per_cluster = filesystem_data.super_block.cluster_size / sizeof(directory_item);
+    int32_t dirs_per_cluster = dirsPerCluster(filesystem_data);
     directory_item dirs_array[dirs_per_cluster];
 
-    // nacteni slozek a vlozeni do vectoru
-    if (working_dir.direct1 != 0) {
-        fs_file.seekp(working_dir.direct1);
-        fs_file.read(reinterpret_cast<char *>(&dirs_array), sizeof(dirs_array));
-        for (int i = 0; i < dirs_per_cluster; i++) {
-            if (dirs_array[i].inode) {
-                directories.push_back(dirs_array[i]);
-            }
-        }
-    }
-    if (working_dir.direct2 != 0) {
-        fs_file.seekp(working_dir.direct2);
+    // platne adresy na databloky
+    std::vector<int32_t> addresses = usedDatablockByINode(filesystem_data,fs_file, working_dir);
 
+    // prochazeni adres databloku
+    for (auto &address : addresses) {
+        // nacteni slozek a vlozeni do vectoru
+        fs_file.seekp(address);
         fs_file.read(reinterpret_cast<char *>(&dirs_array), sizeof(dirs_array));
         for (int i = 0; i < dirs_per_cluster; i++) {
             if (dirs_array[i].inode) {
                 directories.push_back(dirs_array[i]);
-            }
-        }
-    }
-    if (working_dir.direct3 != 0) {
-        fs_file.seekp(working_dir.direct3);
-
-        fs_file.read(reinterpret_cast<char *>(&dirs_array), sizeof(dirs_array));
-        for (int i = 0; i < dirs_per_cluster; i++) {
-            if (dirs_array[i].inode) {
-                directories.push_back(dirs_array[i]);
-            }
-        }
-    }
-    if (working_dir.direct4 != 0) {
-        fs_file.seekp(working_dir.direct4);
-        fs_file.read(reinterpret_cast<char *>(&dirs_array), sizeof(dirs_array));
-        for (int i = 0; i < dirs_per_cluster; i++) {
-            if (dirs_array[i].inode) {
-                directories.push_back(dirs_array[i]);
-            }
-        }
-    }
-    if (working_dir.direct5 != 0) {
-        fs_file.seekp(working_dir.direct5);
-        fs_file.read(reinterpret_cast<char *>(&dirs_array), sizeof(dirs_array));
-        for (int i = 0; i < dirs_per_cluster; i++) {
-            if (dirs_array[i].inode) {
-                directories.push_back(dirs_array[i]);
-            }
-        }
-    }
-    if (working_dir.indirect1 != 0) {
-        uint32_t links_per_cluster = filesystem_data.super_block.cluster_size / sizeof(int32_t);
-        int32_t links[links_per_cluster];
-        fs_file.seekp(working_dir.indirect1);
-        fs_file.read(reinterpret_cast<char *>(&links), sizeof(links));
-        for (int i = 0; i < links_per_cluster; i++) {
-            if (links[i] != 0) {
-                fs_file.seekp(links[i]);
-                fs_file.read(reinterpret_cast<char *>(&dirs_array), sizeof(dirs_array));
-                for (int i = 0; i < dirs_per_cluster; i++) {
-                    if (dirs_array[i].inode) {
-                        directories.push_back(dirs_array[i]);
-                    }
-                }
-            }
-        }
-    }
-    if (working_dir.indirect2 != 0) {
-        uint32_t links_per_cluster = filesystem_data.super_block.cluster_size / sizeof(int32_t);
-        int32_t links[links_per_cluster];
-        fs_file.seekp(working_dir.indirect2);
-        fs_file.read(reinterpret_cast<char *>(&links), sizeof(links));
-        for (int i = 0; i < links_per_cluster; i++) {
-            if (links[i] != 0) {
-                int32_t sublinks[links_per_cluster];
-                fs_file.seekp(links[i]);
-                fs_file.read(reinterpret_cast<char *>(&sublinks), sizeof(sublinks));
-                for (int j = 0; j < links_per_cluster; j++) {
-                    if (sublinks[j] != 0) {
-                        fs_file.seekp(sublinks[j]);
-                        fs_file.read(reinterpret_cast<char *>(&dirs_array), sizeof(dirs_array));
-                        for (int i = 0; i < dirs_per_cluster; i++) {
-                            if (dirs_array[i].inode) {
-                                directories.push_back(dirs_array[i]);
-                            }
-                        }
-                    }
-                }
             }
         }
     }

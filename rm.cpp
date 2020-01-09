@@ -10,6 +10,7 @@
 #include "zosfsstruct.h"
 #include "directory.h"
 #include "inode.h"
+#include "datablock.h"
 
 /**
  * Vrati, zdali adresar je prazdny
@@ -19,80 +20,24 @@
  * @return je prazdny?
  */
 bool isDirectoryEmpty(filesystem &filesystem_data, std::fstream &fs_file, pseudo_inode &inode) {
+
     // adresare v datablocku
     uint32_t dirs_per_cluster = filesystem_data.super_block.cluster_size / sizeof(directory_item);
     directory_item directories[dirs_per_cluster];
-    // pruchod adresari
-    if (inode.direct1 != 0) {
-        fs_file.seekp(inode.direct1);
+
+    // platne adresy na databloky
+    std::vector<int32_t> addresses = usedDatablockByINode(filesystem_data,fs_file, inode);
+
+    // prochazeni adres databloku
+    for (auto &address : addresses) {
+        // pruchod adresari
+        fs_file.seekp(address);
         fs_file.read(reinterpret_cast<char *>(&directories), sizeof(directories));
-        for (int i = 2; i < dirs_per_cluster; i++) {
+
+        int i = 0;
+        if(address == inode.direct1) i = 2;     // vyjimka pro prvni odkaz (reference na . a ..)
+        for (i; i < dirs_per_cluster; i++) {
             if (directories[i].inode) return false;
-        }
-    }
-    if (inode.direct2 != 0) {
-        fs_file.seekp(inode.direct2);
-        fs_file.read(reinterpret_cast<char *>(&directories), sizeof(directories));
-        for (int i = 0; i < dirs_per_cluster; i++) {
-            if (directories[i].inode) return false;
-        }
-    }
-    if (inode.direct3 != 0) {
-        fs_file.seekp(inode.direct3);
-        fs_file.read(reinterpret_cast<char *>(&directories), sizeof(directories));
-        for (int i = 0; i < dirs_per_cluster; i++) {
-            if (directories[i].inode) return false;
-        }
-    }
-    if (inode.direct4 != 0) {
-        fs_file.seekp(inode.direct4);
-        fs_file.read(reinterpret_cast<char *>(&directories), sizeof(directories));
-        for (int i = 0; i < dirs_per_cluster; i++) {
-            if (directories[i].inode) return false;
-        }
-    }
-    if (inode.direct5 != 0) {
-        fs_file.seekp(inode.direct5);
-        fs_file.read(reinterpret_cast<char *>(&directories), sizeof(directories));
-        for (int i = 0; i < dirs_per_cluster; i++) {
-            if (directories[i].inode) return false;
-        }
-    }
-    if (inode.indirect1 != 0) {
-        uint32_t links_per_cluster = filesystem_data.super_block.cluster_size / sizeof(int32_t);
-        int32_t links[links_per_cluster];
-        fs_file.seekp(inode.indirect1);
-        fs_file.read(reinterpret_cast<char *>(&links), sizeof(links));
-        for (int i = 0; i < links_per_cluster; i++) {
-            if (links[i] != 0) {
-                fs_file.seekp(links[i]);
-                fs_file.read(reinterpret_cast<char *>(&directories), sizeof(directories));
-                for (int i = 0; i < dirs_per_cluster; i++) {
-                    if (directories[i].inode) return false;
-                }
-            }
-        }
-    }
-    if (inode.indirect2 != 0) {
-        uint32_t links_per_cluster = filesystem_data.super_block.cluster_size / sizeof(int32_t);
-        int32_t links[links_per_cluster];
-        fs_file.seekp(inode.indirect2);
-        fs_file.read(reinterpret_cast<char *>(&links), sizeof(links));
-        for (int i = 0; i < links_per_cluster; i++) {
-            if (links[i] != 0) {
-                int32_t sublinks[links_per_cluster];
-                fs_file.seekp(links[i]);
-                fs_file.read(reinterpret_cast<char *>(&sublinks), sizeof(sublinks));
-                for (int j = 0; j < links_per_cluster; j++) {
-                    if (sublinks[j] != 0) {
-                        fs_file.seekp(sublinks[j]);
-                        fs_file.read(reinterpret_cast<char *>(&directories), sizeof(directories));
-                        for (int i = 0; i < dirs_per_cluster; i++) {
-                            if (directories[i].inode) return false;
-                        }
-                    }
-                }
-            }
         }
     }
     return true;
@@ -110,108 +55,23 @@ removeLinkInParrentDir(filesystem &filesystem_data, std::fstream &fs_file, pseud
     // adresare v datablocku
     uint32_t dirs_per_cluster = filesystem_data.super_block.cluster_size / sizeof(directory_item);
     directory_item directories[dirs_per_cluster];
-    // odstraneni referenci
-    if (parrent.direct1 != 0) {
-        fs_file.seekp(parrent.direct1);
-        fs_file.read(reinterpret_cast<char *>(&directories), sizeof(directories));
-        for (int i = 0; i < dirs_per_cluster; i++) {
-            if (directories[i].inode == inode.nodeid) {
-                directories[i].inode = 0;
-                fs_file.seekp(parrent.direct1);
-                fs_file.write(reinterpret_cast<const char *>(&directories), sizeof(directories));
-            }
-        }
-    }
-    if (parrent.direct2 != 0) {
-        fs_file.seekp(parrent.direct2);
-        fs_file.read(reinterpret_cast<char *>(&directories), sizeof(directories));
-        for (int i = 0; i < dirs_per_cluster; i++) {
-            if (directories[i].inode == inode.nodeid) {
-                directories[i].inode = 0;
-                fs_file.seekp(parrent.direct2);
-                fs_file.write(reinterpret_cast<const char *>(&directories), sizeof(directories));
-            }
-        }
-    }
-    if (parrent.direct3 != 0) {
-        fs_file.seekp(parrent.direct3);
-        fs_file.read(reinterpret_cast<char *>(&directories), sizeof(directories));
-        for (int i = 0; i < dirs_per_cluster; i++) {
-            if (directories[i].inode == inode.nodeid) {
-                directories[i].inode = 0;
-                fs_file.seekp(parrent.direct3);
-                fs_file.write(reinterpret_cast<const char *>(&directories), sizeof(directories));
-            }
-        }
-    }
-    if (parrent.direct4 != 0) {
-        fs_file.seekp(parrent.direct4);
-        fs_file.read(reinterpret_cast<char *>(&directories), sizeof(directories));
-        for (int i = 0; i < dirs_per_cluster; i++) {
-            if (directories[i].inode == inode.nodeid) {
-                directories[i].inode = 0;
-                fs_file.seekp(parrent.direct4);
-                fs_file.write(reinterpret_cast<const char *>(&directories), sizeof(directories));
-            }
-        }
-    }
-    if (parrent.direct5 != 0) {
-        fs_file.seekp(parrent.direct5);
-        fs_file.read(reinterpret_cast<char *>(&directories), sizeof(directories));
-        for (int i = 0; i < dirs_per_cluster; i++) {
-            if (directories[i].inode == inode.nodeid) {
-                directories[i].inode = 0;
-                fs_file.seekp(parrent.direct5);
-                fs_file.write(reinterpret_cast<const char *>(&directories), sizeof(directories));
-            }
-        }
-    }
-    if (parrent.indirect1 != 0) {
-        uint32_t links_per_cluster = filesystem_data.super_block.cluster_size / sizeof(int32_t);
-        int32_t links[links_per_cluster];
-        fs_file.seekp(parrent.indirect1);
-        fs_file.read(reinterpret_cast<char *>(&links), sizeof(links));
-        for (int i = 0; i < links_per_cluster; i++) {
-            if (links[i] != 0) {
-                fs_file.seekp(links[i]);
-                fs_file.read(reinterpret_cast<char *>(&directories), sizeof(directories));
-                for (int i = 0; i < dirs_per_cluster; i++) {
-                    if (directories[i].inode == inode.nodeid) {
-                        directories[i].inode = 0;
-                        fs_file.seekp(links[i]);
-                        fs_file.write(reinterpret_cast<const char *>(&directories), sizeof(directories));
-                    }
-                }
-            }
-        }
-    }
-    if (parrent.indirect2 != 0) {
-        uint32_t links_per_cluster = filesystem_data.super_block.cluster_size / sizeof(int32_t);
-        int32_t links[links_per_cluster];
-        fs_file.seekp(parrent.indirect2);
-        fs_file.read(reinterpret_cast<char *>(&links), sizeof(links));
-        for (int i = 0; i < links_per_cluster; i++) {
-            if (links[i] != 0) {
-                int32_t sublinks[links_per_cluster];
-                fs_file.seekp(links[i]);
-                fs_file.read(reinterpret_cast<char *>(&sublinks), sizeof(sublinks));
-                for (int j = 0; j < links_per_cluster; j++) {
-                    if (sublinks[j] != 0) {
-                        fs_file.seekp(sublinks[j]);
-                        fs_file.read(reinterpret_cast<char *>(&directories), sizeof(directories));
-                        for (int i = 0; i < dirs_per_cluster; i++) {
-                            if (directories[i].inode == inode.nodeid) {
-                                directories[i].inode = 0;
-                                fs_file.seekp(sublinks[j]);
-                                fs_file.write(reinterpret_cast<const char *>(&directories), sizeof(directories));
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
 
+    // platne adresy na databloky
+    std::vector<int32_t> addresses = usedDatablockByINode(filesystem_data,fs_file, parrent);
+
+    // prochazeni adres databloku
+    for (auto &address : addresses) {
+        // odstraneni referenci
+        fs_file.seekp(address);
+        fs_file.read(reinterpret_cast<char *>(&directories), sizeof(directories));
+        for (int i = 0; i < dirs_per_cluster; i++) {
+            if (directories[i].inode == inode.nodeid) {
+                directories[i].inode = 0;
+                fs_file.seekp(address);
+                fs_file.write(reinterpret_cast<const char *>(&directories), sizeof(directories));
+            }
+        }
+    }
 }
 
 /**
@@ -252,32 +112,17 @@ void removeDatablockPositionInBitmap(filesystem &filesystem_data, std::fstream &
  * @param inode soubor
  */
 void removeDatablocksPositionInBitmap(filesystem &filesystem_data, std::fstream &fs_file, pseudo_inode &inode) {
-    // odstraneni databloku
-    if (inode.direct1 != 0) {
-        removeDatablockPositionInBitmap(filesystem_data, fs_file, inode.direct1);
+    // platne adresy na databloky
+    std::vector<int32_t> addresses = usedDatablockByINode(filesystem_data,fs_file, inode);
+
+    // prochazeni adres databloku
+    for (auto &address : addresses) {
+        // odstraneni databloku
+        removeDatablockPositionInBitmap(filesystem_data, fs_file, address);
     }
-    if (inode.direct2 != 0) {
-        removeDatablockPositionInBitmap(filesystem_data, fs_file, inode.direct2);
-    }
-    if (inode.direct3 != 0) {
-        removeDatablockPositionInBitmap(filesystem_data, fs_file, inode.direct3);
-    }
-    if (inode.direct4 != 0) {
-        removeDatablockPositionInBitmap(filesystem_data, fs_file, inode.direct4);
-    }
-    if (inode.direct5 != 0) {
-        removeDatablockPositionInBitmap(filesystem_data, fs_file, inode.direct5);
-    }
+
+    // odstraneni databloku pro neprime odkazy
     if (inode.indirect1 != 0) {
-        uint32_t links_per_cluster = filesystem_data.super_block.cluster_size / sizeof(int32_t);
-        int32_t links[links_per_cluster];
-        fs_file.seekp(inode.indirect1);
-        fs_file.read(reinterpret_cast<char *>(&links), sizeof(links));
-        for (int i = 0; i < links_per_cluster; i++) {
-            if (links[i] != 0) {
-                removeDatablockPositionInBitmap(filesystem_data, fs_file, links[i]);
-            }
-        }
         removeDatablockPositionInBitmap(filesystem_data, fs_file, inode.indirect1);
     }
     if (inode.indirect2 != 0) {
@@ -287,14 +132,6 @@ void removeDatablocksPositionInBitmap(filesystem &filesystem_data, std::fstream 
         fs_file.read(reinterpret_cast<char *>(&links), sizeof(links));
         for (int i = 0; i < links_per_cluster; i++) {
             if (links[i] != 0) {
-                int32_t sublinks[links_per_cluster];
-                fs_file.seekp(links[i]);
-                fs_file.read(reinterpret_cast<char *>(&sublinks), sizeof(sublinks));
-                for (int j = 0; j < links_per_cluster; j++) {
-                    if (sublinks[j] != 0) {
-                        removeDatablockPositionInBitmap(filesystem_data, fs_file, sublinks[j]);
-                    }
-                }
                 removeDatablockPositionInBitmap(filesystem_data, fs_file, links[i]);
             }
         }

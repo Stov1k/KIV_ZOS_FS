@@ -57,49 +57,12 @@ void cat(filesystem &filesystem_data, std::string &s1) {
         std::fstream fs_file;
         fs_file.open(filesystem_data.fs_file, std::ios::in | std::ios::out | std::ios::binary);
 
-        if (inode.direct1 != 0) {
-            readDataBlock(filesystem_data, fs_file, inode.direct1);
-        }
-        if (inode.direct2 != 0) {
-            readDataBlock(filesystem_data, fs_file, inode.direct2);
-        }
-        if (inode.direct3 != 0) {
-            readDataBlock(filesystem_data, fs_file, inode.direct3);
-        }
-        if (inode.direct4 != 0) {
-            readDataBlock(filesystem_data, fs_file, inode.direct4);
-        }
-        if (inode.direct5 != 0) {
-            readDataBlock(filesystem_data, fs_file, inode.direct5);
-        }
-        if (inode.indirect1 != 0) {
-            uint32_t links_per_cluster = filesystem_data.super_block.cluster_size / sizeof(int32_t);
-            int32_t links[links_per_cluster];
-            fs_file.seekp(inode.indirect1);
-            fs_file.read(reinterpret_cast<char *>(&links), sizeof(links));
-            for (int i = 0; i < links_per_cluster; i++) {
-                if (links[i] != 0) {
-                    readDataBlock(filesystem_data, fs_file, links[i]);
-                }
-            }
-        }
-        if (inode.indirect2 != 0) {
-            uint32_t links_per_cluster = filesystem_data.super_block.cluster_size / sizeof(int32_t);
-            int32_t links[links_per_cluster];
-            fs_file.seekp(inode.indirect2);
-            fs_file.read(reinterpret_cast<char *>(&links), sizeof(links));
-            for (int i = 0; i < links_per_cluster; i++) {
-                if (links[i] != 0) {
-                    int32_t sublinks[links_per_cluster];
-                    fs_file.seekp(links[i]);
-                    fs_file.read(reinterpret_cast<char *>(&sublinks), sizeof(sublinks));
-                    for (int j = 0; j < links_per_cluster; j++) {
-                        if (sublinks[j] != 0) {
-                            readDataBlock(filesystem_data, fs_file, sublinks[j]);
-                        }
-                    }
-                }
-            }
+        // platne adresy na databloky
+        std::vector<int32_t> addresses = usedDatablockByINode(filesystem_data,fs_file, inode);
+
+        // prochazeni adres databloku
+        for (auto &address : addresses) {
+            readDataBlock(filesystem_data, fs_file, address);
         }
 
         std::cout << std::endl;

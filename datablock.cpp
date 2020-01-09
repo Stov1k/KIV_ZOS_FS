@@ -6,6 +6,7 @@
 #include <fstream>
 #include <bitset>
 #include <iostream>
+#include <vector>
 #include "datablock.h"
 #include "zosfsstruct.h"
 
@@ -106,3 +107,47 @@ int32_t createIndirectDatablock(filesystem &filesystem_data, std::fstream &fs_fi
     return datablock_position;
 }
 
+/**
+ * Vrati vector adres pouzitych databloku
+ * @param filesystem_data filesystem
+ * @param fs_file otevreny soubor filesystemu
+ * @param inode
+ * @return vector adres databloku
+ */
+std::vector<int32_t> usedDatablockByINode(filesystem &filesystem_data, std::fstream &fs_file, pseudo_inode inode) {
+    std::vector<int32_t> addresses;
+    if (inode.direct1) addresses.push_back(inode.direct1);
+    if (inode.direct2) addresses.push_back(inode.direct2);
+    if (inode.direct3) addresses.push_back(inode.direct3);
+    if (inode.direct4) addresses.push_back(inode.direct4);
+    if (inode.direct5) addresses.push_back(inode.direct5);
+    if (inode.indirect1 || inode.indirect1) {
+        int32_t links_per_cluster = linksPerCluster(filesystem_data);
+        int32_t links[links_per_cluster];
+        if (inode.indirect1) {
+            fs_file.seekp(inode.indirect1);
+            fs_file.read(reinterpret_cast<char *>(&links), sizeof(links));
+            for (int i = 0; i < links_per_cluster; i++) {
+                if (links[i]) {
+                    addresses.push_back(links[i]);
+                }
+            }
+        }
+        if (inode.indirect2) {
+            int32_t sublinks[links_per_cluster];
+            fs_file.seekp(inode.indirect2);
+            fs_file.read(reinterpret_cast<char *>(&links), sizeof(links));
+            for (int i = 0; i < links_per_cluster; i++) {
+                if (links[i]) {
+                    fs_file.seekp(links[i]);
+                    fs_file.read(reinterpret_cast<char *>(&sublinks), sizeof(sublinks));
+                    for (int j = 0; j < links_per_cluster; j++) {
+                        if (sublinks[j]) addresses.push_back(sublinks[j]);
+                    }
+                };
+            }
+        }
+    }
+
+    return addresses;
+}
