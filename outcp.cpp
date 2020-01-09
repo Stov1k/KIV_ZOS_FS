@@ -13,6 +13,7 @@
 #include "zosfsstruct.h"
 #include "directory.h"
 #include "inode.h"
+#include "datablock.h"
 
 /**
  * Vypise obsah bufferu
@@ -21,7 +22,6 @@
  */
 void printBuffer(std::fstream &output_file, char buffer[], int32_t len) {
     for (int i = 0; i < len; ++i) {
-        //if (buffer[i] == EOF) break;                // TODO: asi hloupa podminka
         output_file.write(reinterpret_cast<const char *>(&buffer[i]), sizeof(char));
     }
 }
@@ -32,15 +32,16 @@ void printBuffer(std::fstream &output_file, char buffer[], int32_t len) {
  * @param fs_file otevreny soubor na pseudoNTFS
  * @param output_file otevreny soubor na pevnem disku
  * @param location pocatecni pozice datablocku
+ * @param to_export exportovana cast (musi byt rovna nebo mensi nez cluster_size!)
  */
-void readDataBlock(filesystem &filesystem_data, std::fstream &fs_file, std::fstream &output_file, int32_t location) {
+void readDataBlock(filesystem &filesystem_data, std::fstream &fs_file, std::fstream &output_file, int32_t location, long to_export) {
     // priprava bufferu
-    char buffer[filesystem_data.super_block.cluster_size];
-    memset(buffer, EOF, filesystem_data.super_block.cluster_size);
+    char buffer[to_export];
+    memset(buffer, EOF, to_export);
     // presun na pozici
     fs_file.seekp(location);
-    fs_file.read(buffer, filesystem_data.super_block.cluster_size);
-    printBuffer(output_file, buffer, filesystem_data.super_block.cluster_size);
+    fs_file.read(buffer, to_export);
+    printBuffer(output_file, buffer, to_export);
 }
 
 /**
@@ -66,49 +67,17 @@ void outcp(filesystem &filesystem_data, std::string &s1, std::string &s2) {
         fs_file.open(filesystem_data.fs_file, std::ios::in | std::ios::out | std::ios::binary);
         output_file.open(s2, std::ios::in | std::ios::out | std::ios::binary);
 
-        if (inode.direct1 != 0) {
-            readDataBlock(filesystem_data, fs_file, output_file, inode.direct1);
-        }
-        if (inode.direct2 != 0) {
-            readDataBlock(filesystem_data, fs_file, output_file, inode.direct2);
-        }
-        if (inode.direct3 != 0) {
-            readDataBlock(filesystem_data, fs_file, output_file, inode.direct3);
-        }
-        if (inode.direct4 != 0) {
-            readDataBlock(filesystem_data, fs_file, output_file, inode.direct4);
-        }
-        if (inode.direct5 != 0) {
-            readDataBlock(filesystem_data, fs_file, output_file, inode.direct5);
-        }
-        if (inode.indirect1 != 0) {
-            uint32_t links_per_cluster = filesystem_data.super_block.cluster_size / sizeof(int32_t);
-            int32_t links[links_per_cluster];
-            fs_file.seekp(inode.indirect1);
-            fs_file.read(reinterpret_cast<char *>(&links), sizeof(links));
-            for (int i = 0; i < links_per_cluster; i++) {
-                if (links[i] != 0) {
-                    readDataBlock(filesystem_data, fs_file, output_file, links[i]);
-                }
-            }
-        }
-        if (inode.indirect2 != 0) {
-            uint32_t links_per_cluster = filesystem_data.super_block.cluster_size / sizeof(int32_t);
-            int32_t links[links_per_cluster];
-            fs_file.seekp(inode.indirect2);
-            fs_file.read(reinterpret_cast<char *>(&links), sizeof(links));
-            for (int i = 0; i < links_per_cluster; i++) {
-                if (links[i] != 0) {
-                    int32_t sublinks[links_per_cluster];
-                    fs_file.seekp(links[i]);
-                    fs_file.read(reinterpret_cast<char *>(&sublinks), sizeof(sublinks));
-                    for (int j = 0; j < links_per_cluster; j++) {
-                        if (sublinks[j] != 0) {
-                            readDataBlock(filesystem_data, fs_file, output_file, sublinks[j]);
-                        }
-                    }
-                }
-            }
+        // platne adresy na databloky
+        std::vector<int32_t> addresses = usedDatablockByINode(filesystem_data,fs_file, inode);
+
+        long remaining = inode.file_size;                               // zbyva exportovat bytu
+        long to_export = filesystem_data.super_block.cluster_size;      // bude exportovano nasledujici iteraci
+
+        // prochazeni adres databloku
+        for (auto &address : addresses) {
+            if(to_export > remaining) to_export = remaining;
+            readDataBlock(filesystem_data, fs_file, output_file, address, to_export);
+            remaining -= to_export;
         }
 
         std::cout << std::endl;

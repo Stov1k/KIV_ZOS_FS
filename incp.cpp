@@ -248,8 +248,7 @@ void inputCopy(filesystem &filesystem_data, std::string &input, std::string &loc
 
     }
 
-
-    inode.file_size = writed;
+    inode.file_size = filesize;     // puvodni velikost souboru, nutne pro export
 
     // aktualizace podslozek v nadrazenem adresari
     fs_file.seekp(filesystem_data.current_dir.direct1); // skoci na data
