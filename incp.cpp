@@ -105,7 +105,7 @@ void inputCopy(filesystem &filesystem_data, std::string &input, std::string &loc
 
     // zjisti, zdali jiz soubor stejneho nazvu existuje
     directory_item dir = getDirectory(0, location); // TODO: location pak predelat (bude moc byt uvadena cesta)
-    if (isDirectoryExists(filesystem_data, dir)) {
+    if (isDirectoryExists(filesystem_data, filesystem_data.current_dir, dir)) {
         std::cout << "EXIST" << std::endl;
         return;
     }

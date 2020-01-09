@@ -84,11 +84,13 @@ std::vector<directory_item> getDirectories(filesystem &filesystem_data, pseudo_i
 
 /**
  * Vrati, zdali adresar tehoz jmena jiz existuje
+ * @param filesystem_data filesystem
+ * @param working_dir pracovni adresar
  * @param dir adresar
  * @return existuje adresar stejneho jmena?
  */
-bool isDirectoryExists(filesystem &filesystem_data, directory_item &dir) {
-    std::vector<directory_item> directories = getDirectories(filesystem_data, filesystem_data.current_dir);
+bool isDirectoryExists(filesystem &filesystem_data, pseudo_inode &working_dir, directory_item &dir) {
+    std::vector<directory_item> directories = getDirectories(filesystem_data, working_dir);
     for (auto &directory : directories) {
         directory.item_name;
         if (strcmp(dir.item_name, directory.item_name) == 0) {

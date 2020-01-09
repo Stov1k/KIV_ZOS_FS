@@ -91,7 +91,18 @@ void mv(filesystem &filesystem_data, std::string &s1, std::string &s2) {
     fs_file.open(filesystem_data.fs_file, std::ios::in | std::ios::out | std::ios::binary);
 
     if (old_path_ptr != nullptr && new_path_ptr != nullptr) {
+        pseudo_inode old_path = *old_path_ptr;
         std::cout << "Old name: " << s1_segments.back() << " New name: " << s2_segments.back() << std::endl;
+        directory_item old_dir = getDirectory(0, s1_segments.back());
+        if (isDirectoryExists(filesystem_data, old_path, old_dir)) {
+            pseudo_inode *old_inode_ptr = getFileINode(filesystem_data, old_path, s1_segments.back());
+            if(old_inode_ptr != nullptr) {
+                pseudo_inode old_inode = *old_inode_ptr;
+                std::cout << old_inode.nodeid << std::endl;
+            }
+        } else {
+            std::cout << old_dir.item_name << std::endl;
+        }
     }
 
     // uzavreni souboru fs

@@ -46,7 +46,7 @@ void mkdir(filesystem &filesystem_data, std::string &a1) {
         pseudo_inode *inode_ptr;
 
         // zjistim, zdali jiz neexistuje adresar stejneho nazvu
-        if (isDirectoryExists(filesystem_data, dir)) {
+        if (isDirectoryExists(filesystem_data, filesystem_data.current_dir, dir)) {
             force_break = -1;   // EXISTS
             cd(filesystem_data, segments[i], false, true);
             continue;

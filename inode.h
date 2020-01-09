@@ -23,8 +23,10 @@ pseudo_inode *getFreeINode(filesystem &filesystem_data);
 
 /**
  * Vrati referenci na inode souboru
+ * @param filesystem_data filesystem
+ * @param working_dir pracovni adresar
  * @param s1 nazev souboru
  */
-pseudo_inode *getFileINode(filesystem &filesystem_data, std::string &s1);
+pseudo_inode *getFileINode(filesystem &filesystem_data, pseudo_inode &working_dir, std::string &s1);
 
 #endif //ZOSFS_INODE_H

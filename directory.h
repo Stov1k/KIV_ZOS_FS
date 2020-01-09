@@ -40,10 +40,12 @@ std::vector<directory_item> getDirectories(filesystem &filesystem_data, pseudo_i
 
 /**
  * Vrati, zdali adresar tehoz jmena jiz existuje
+ * @param filesystem_data filesystem
+ * @param working_dir pracovni adresar
  * @param dir adresar
  * @return existuje adresar stejneho jmena?
  */
-bool isDirectoryExists(filesystem &filesystem_data, directory_item &dir);
+bool isDirectoryExists(filesystem &filesystem_data, pseudo_inode &working_dir, directory_item &dir);
 
 /**
  * Vrati referenci na adresar

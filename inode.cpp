@@ -57,9 +57,11 @@ pseudo_inode *getFreeINode(filesystem &filesystem_data) {
 
 /**
  * Vrati referenci na inode souboru
+ * @param filesystem_data filesystem
+ * @param working_dir pracovni adresar
  * @param s1 nazev souboru
  */
-pseudo_inode *getFileINode(filesystem &filesystem_data, std::string &s1) {
+pseudo_inode *getFileINode(filesystem &filesystem_data, pseudo_inode &working_dir, std::string &s1) {
     std::fstream input_file;
     input_file.open(filesystem_data.fs_file, std::ios::in | std::ios::out | std::ios::binary);
 
@@ -67,7 +69,7 @@ pseudo_inode *getFileINode(filesystem &filesystem_data, std::string &s1) {
     pseudo_inode *inode_ptr = nullptr;
 
     // zjistim, zdali existuje adresar stejneho nazvu
-    std::vector<directory_item> directories = getDirectories(filesystem_data, filesystem_data.current_dir);
+    std::vector<directory_item> directories = getDirectories(filesystem_data, working_dir);
     for (auto &directory : directories) {
         directory.item_name;
         if (strcmp(s1.c_str(), directory.item_name) == 0) {
