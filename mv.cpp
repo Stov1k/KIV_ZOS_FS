@@ -1,5 +1,5 @@
 //
-// Created by pavel on 07.01.20.
+// Created by pavel on 08.01.20.
 //
 
 #include <string>
@@ -7,32 +7,25 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#include "mv.h"
 #include "zosfsstruct.h"
 #include "directory.h"
 #include "inode.h"
-#include "cd.h"
 
-/**
- * Zmeni aktualni cestu do adresare a1
- * @param filesystem_data filesystem
- * @param a1 nazev adresare
- * @param verbose vypisovani zprav
- * @param relocate premisteni se
- * @return reference na inode adresare
- */
-pseudo_inode* cd(filesystem &filesystem_data, std::string &a1, bool verbose, bool relocate) {
+pseudo_inode* moveTo(filesystem &filesystem_data, std::string &s1) {
     // cesta rozdelena na adresare
-    std::vector<std::string> segments = splitPath(a1);
+    std::vector<std::string> segments = splitPath(s1);
     // otevreni souboru fs
     std::fstream fs_file;
     fs_file.open(filesystem_data.fs_file, std::ios::in | std::ios::out | std::ios::binary);
 
     // pracovni adresar nad nimz jsou provadeny zmeny
+    pseudo_inode * working_dir_ptr;
     pseudo_inode working_dir = filesystem_data.current_dir;
     // vynucene ukonceni cyklu pri neplatne ceste
     int force_break = 0;
     // prochazeni adresarema
-    for (int i = 0; i < segments.size(); i++) {
+    for (int i = 0; i < segments.size()-1; i++) {
         if (i == 0 && segments[i].length() == 0) {   // zadana absolutni cesta
             working_dir = filesystem_data.root_dir;
             continue;
@@ -61,31 +54,46 @@ pseudo_inode* cd(filesystem &filesystem_data, std::string &a1, bool verbose, boo
         }
     }
     // vypsani zpravy
-    if(verbose) {
         if (force_break) {
             if (force_break == 2) {
                 std::cout << "FILE IS NOT DIRECTORY" << std::endl;
             } else {
                 std::cout << "PATH NOT FOUND" << std::endl;
+                working_dir_ptr = nullptr;
             }
         } else {
             std::cout << "OK" << std::endl;
+            working_dir_ptr = &working_dir;
         }
-    }
-    if(relocate) {
-        filesystem_data.current_dir = working_dir;
-    }
+
     // uzavreni souboru fs
     fs_file.close();
 
-    return &working_dir;
+    return working_dir_ptr;
 }
 
 /**
- * Zmeni aktualni cestu do adresare a1
+ * Presune soubor s1 do umisteni s2
  * @param filesystem_data filesystem
- * @param a1 nazev adresare
+ * @param s1 nazev souboru
+ * @param s2 nazev souboru
  */
-void cd(filesystem &filesystem_data, std::string &a1) {
-    cd(filesystem_data, a1, true, true);
+void mv(filesystem &filesystem_data, std::string &s1, std::string &s2) {
+
+    std::vector<std::string> s1_segments = splitPath(s1);
+    std::vector<std::string> s2_segments = splitPath(s2);
+
+    pseudo_inode* old_path_ptr = moveTo(filesystem_data, s1);
+    pseudo_inode* new_path_ptr = moveTo(filesystem_data, s2);
+
+    // otevreni souboru fs
+    std::fstream fs_file;
+    fs_file.open(filesystem_data.fs_file, std::ios::in | std::ios::out | std::ios::binary);
+
+    if(old_path_ptr != nullptr && new_path_ptr != nullptr) {
+        std::cout << "Old name: " << s1_segments.back() << " New name: " << s2_segments.back() << std::endl;
+    }
+
+    // uzavreni souboru fs
+    fs_file.close();
 }

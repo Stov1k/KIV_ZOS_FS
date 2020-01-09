@@ -8,9 +8,19 @@
 #include "zosfsstruct.h"
 
 /**
- * Vypise aktualni cestu
- * @param filesystem_data
+ * Vypise cestu
+ * @param filesystem_data filesystem
+ * @param inode adresar
+ * @param verbose vypise cestu
+ * @return cesta
  */
-void pwd(filesystem &filesystem_data);
+std::string pwd(filesystem &filesystem_data, pseudo_inode &inode, bool verbose);
+
+/**
+ * Vypise aktualni cestu
+ * @param filesystem_data filesystem
+ * @return cesta
+ */
+std::string pwd(filesystem &filesystem_data);
 
 #endif //ZOSFS_PWD_H

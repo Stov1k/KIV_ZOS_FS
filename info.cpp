@@ -8,6 +8,7 @@
 #include "info.h"
 #include "zosfsstruct.h"
 #include "directory.h"
+#include "inode.h"
 
 /**
  * Vypise adresy databloku
@@ -79,12 +80,11 @@ void info(filesystem &filesystem_data, std::string &name) {
     std::string dir_name;
 
     // zjistim, zdali existuje adresar stejneho nazvu
-    std::vector<directory_item> directories = getDirectories(filesystem_data);
+    std::vector<directory_item> directories = getDirectories(filesystem_data, filesystem_data.current_dir);
     for (auto &directory : directories) {
         if (strcmp(name.c_str(), directory.item_name) == 0) {
             dir_name = directory.item_name;
-            fs_file.seekp(
-                    filesystem_data.super_block.inode_start_address + (directory.inode - 1) * sizeof(pseudo_inode));
+            fs_file.seekp(getINodePosition(filesystem_data, directory.inode));
             fs_file.read(reinterpret_cast<char *>(&inode), sizeof(pseudo_inode));
             inode_ptr = &inode;
             break;

@@ -17,6 +17,9 @@
  */
 void mkdir(filesystem &filesystem_data, std::string &a1) {
 
+    // stavajici umisteni
+    pseudo_inode original_location = filesystem_data.current_dir;
+
     // cesta rozdelena na adresare
     std::vector<std::string> segments = splitPath(a1);
 
@@ -45,7 +48,7 @@ void mkdir(filesystem &filesystem_data, std::string &a1) {
         // zjistim, zdali jiz neexistuje adresar stejneho nazvu
         if (isDirectoryExists(filesystem_data, dir)) {
             force_break = -1;   // EXISTS
-            cd(filesystem_data, segments[i], false);
+            cd(filesystem_data, segments[i], false, true);
             continue;
         }
 
@@ -127,7 +130,7 @@ void mkdir(filesystem &filesystem_data, std::string &a1) {
         fs_file.write(reinterpret_cast<const char *>(&subdirectories), sizeof(subdirectories));
 
         // prejde do noveho adresare
-        cd(filesystem_data, segments[i], false);
+        cd(filesystem_data, segments[i], false, true);
     }
 
     // vypsani zpravy
@@ -144,4 +147,7 @@ void mkdir(filesystem &filesystem_data, std::string &a1) {
     }
 
     fs_file.close();
+
+    // obnova umisteni
+    filesystem_data.current_dir = original_location;
 }

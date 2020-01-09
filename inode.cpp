@@ -67,12 +67,11 @@ pseudo_inode *getFileINode(filesystem &filesystem_data, std::string &s1) {
     pseudo_inode *inode_ptr = nullptr;
 
     // zjistim, zdali existuje adresar stejneho nazvu
-    std::vector<directory_item> directories = getDirectories(filesystem_data);
+    std::vector<directory_item> directories = getDirectories(filesystem_data, filesystem_data.current_dir);
     for (auto &directory : directories) {
         directory.item_name;
         if (strcmp(s1.c_str(), directory.item_name) == 0) {
-            input_file.seekp(
-                    filesystem_data.super_block.inode_start_address + (directory.inode - 1) * sizeof(pseudo_inode));
+            input_file.seekp(getINodePosition(filesystem_data, directory.inode));
             input_file.read(reinterpret_cast<char *>(&inode), sizeof(pseudo_inode));
             if (inode.isDirectory) {
                 std::cout << "FILE IS DIRECTORY" << std::endl;

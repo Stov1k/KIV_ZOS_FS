@@ -96,41 +96,6 @@ int32_t writeDatablock(filesystem &filesystem_data, int32_t *datablock, std::ifs
 }
 
 /**
- * Vytvoreni datablocku neprimych odkazu
- * @param filesystem_data filesystem
- * @param links_per_cluster pocet odkazu na datablock
- * @param cpin_file otevreny soubor na pevnem disku
- * @param fs_file otevreny soubor filesystemu
- * @return pozice
- */
-int32_t createIndirectDatablock(filesystem &filesystem_data, uint32_t links_per_cluster, std::ifstream &cpin_file,
-                                std::fstream &fs_file) {
-    int32_t links[links_per_cluster];
-    for (int i = 0; i < links_per_cluster; i++) {
-        links[i] = 0;
-    }
-
-    // ziskani datablocku (odkazy)
-    int32_t datablock[4];
-    getFreeDatablock(filesystem_data, datablock);
-    int32_t position_absolute = datablock[0];
-    int32_t position_byte = datablock[3];           // poradi bytu v bitmape
-    uint8_t bitmap_byte = (uint8_t) datablock[2];
-
-    // aktualizace bitmapy (odkazy)
-    fs_file.seekp(filesystem_data.super_block.bitmap_start_address + position_byte); // skoci na bitmapu
-    fs_file.write(reinterpret_cast<const char *>(&bitmap_byte), sizeof(bitmap_byte));    // zapise upravenou bitmapu
-
-    // aktualizace dat (odkazy)
-    int32_t datablock_position =
-            filesystem_data.super_block.data_start_address + (datablock[0] * filesystem_data.super_block.cluster_size);
-    fs_file.seekp(datablock_position);
-    fs_file.write(reinterpret_cast<const char *>(&links), filesystem_data.super_block.cluster_size);
-
-    return datablock_position;
-}
-
-/**
  * Zapis na FS
  * @param filesystem_data filesystem
  * @param input vstupni soubor
@@ -226,7 +191,7 @@ void inputCopy(filesystem &filesystem_data, std::string &input, std::string &loc
 
     // 1N - prvni neprimy
     if (writed < filesize) {
-        inode.indirect1 = createIndirectDatablock(filesystem_data, links_per_cluster, cpin_file, fs_file);
+        inode.indirect1 = createIndirectDatablock(filesystem_data, fs_file);
 
         int32_t links[links_per_cluster];
         fs_file.seekp(inode.indirect1);
@@ -247,7 +212,7 @@ void inputCopy(filesystem &filesystem_data, std::string &input, std::string &loc
 
     // 2N - druhy neprimy
     if (writed < filesize) {
-        inode.indirect2 = createIndirectDatablock(filesystem_data, links_per_cluster, cpin_file, fs_file);
+        inode.indirect2 = createIndirectDatablock(filesystem_data, fs_file);
 
         int32_t links[links_per_cluster];
         fs_file.seekp(inode.indirect2);
@@ -255,7 +220,7 @@ void inputCopy(filesystem &filesystem_data, std::string &input, std::string &loc
 
         int iteration = 0;
         while (writed < filesize && iteration < links_per_cluster) {
-            links[iteration] = createIndirectDatablock(filesystem_data, links_per_cluster, cpin_file, fs_file);
+            links[iteration] = createIndirectDatablock(filesystem_data, fs_file);
 
             // aktualizace odkazu
             fs_file.seekp(inode.indirect2);

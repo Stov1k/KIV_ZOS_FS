@@ -5,6 +5,7 @@
 #include <stack>
 #include <fstream>
 #include <iostream>
+#include <sstream>
 #include "pwd.h"
 #include "zosfsstruct.h"
 #include "inode.h"
@@ -17,8 +18,7 @@
  * @param inode adresar
  * @param parrent nadadresar
  */
-std::string
-getDirectoryName(filesystem &filesystem_data, std::fstream &fs_file, pseudo_inode &inode, pseudo_inode &parrent) {
+std::string getDirectoryName(filesystem &filesystem_data, std::fstream &fs_file, pseudo_inode &inode, pseudo_inode &parrent) {
     // adresare v datablocku
     uint32_t dirs_per_cluster = filesystem_data.super_block.cluster_size / sizeof(directory_item);
     directory_item directories[dirs_per_cluster];
@@ -112,34 +112,38 @@ getDirectoryName(filesystem &filesystem_data, std::fstream &fs_file, pseudo_inod
 }
 
 /**
- * Vypsani cesty
+ * Vrati cestu jako string
  * @param filesystem_data filesystem
  * @param fs_file otevreny soubor filesystemu
  * @param s zasobnik
  */
-void printStack(filesystem &filesystem_data, std::fstream &fs_file, std::stack<pseudo_inode> s) {
+std::string getPathString(filesystem &filesystem_data, std::fstream &fs_file, std::stack<pseudo_inode> s) {
+    std::stringstream buffer;
     pseudo_inode prev = s.top();
     s.pop();
     while (!s.empty()) {
         pseudo_inode top = s.top();
-        std::cout << "/" << getDirectoryName(filesystem_data, fs_file, top, prev);
+        buffer << "/" << getDirectoryName(filesystem_data, fs_file, top, prev);
         prev = top;
         s.pop();
     }
-    std::cout << '\n';
+    return buffer.str();
 }
 
 /**
- * Vypise aktualni cestu
- * @param filesystem_data
+ * Vypise cestu
+ * @param filesystem_data filesystem
+ * @param inode adresar
+ * @param verbose vypise cestu
+ * @return cesta
  */
-void pwd(filesystem &filesystem_data) {
+std::string pwd(filesystem &filesystem_data, pseudo_inode &inode, bool verbose) {
     std::fstream fs_file;
     fs_file.open(filesystem_data.fs_file, std::ios::in | std::ios::out | std::ios::binary);
 
     std::stack<pseudo_inode> s_path;
 
-    pseudo_inode current = filesystem_data.current_dir;
+    pseudo_inode current = inode;
     pseudo_inode root = filesystem_data.root_dir;
 
     s_path.push(current);
@@ -148,7 +152,19 @@ void pwd(filesystem &filesystem_data) {
         s_path.push(current);
     } while (current.nodeid != root.nodeid);
 
-    printStack(filesystem_data, fs_file, s_path);
+    if (verbose) {
+        std::string path = getPathString(filesystem_data, fs_file, s_path);
+        std::cout << path << '\n';
+    }
 
     fs_file.close();
+}
+
+/**
+ * Vypise aktualni cestu
+ * @param filesystem_data filesystem
+ * @return cesta
+ */
+std::string pwd(filesystem &filesystem_data) {
+    return pwd(filesystem_data, filesystem_data.current_dir, true);
 }

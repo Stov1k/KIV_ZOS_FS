@@ -10,6 +10,16 @@
 #include <sstream>
 #include "zosfsstruct.h"
 #include "inode.h"
+#include "datablock.h"
+
+/**
+ * Pocet adresaru, ktere lze ulozit do jednoho databloku
+ * @param filesystem_data filesystem
+ * @return pocet adresaru
+ */
+int32_t dirsPerCluster(filesystem &filesystem_data) {
+    return filesystem_data.super_block.cluster_size / sizeof(directory_item);
+}
 
 /**
  * Rozdeleni cesty na adresare
@@ -39,9 +49,11 @@ void printDirectories(const std::vector<directory_item> &directories) {
 
 /**
  * Vrati vektor podadresaru v aktualnim adresari
+ * @param filesystem_data filesystem
+ * @param working_dir pracovni adresar
  * @return vektor adresaru
  */
-std::vector<directory_item> getDirectories(filesystem &filesystem_data) {
+std::vector<directory_item> getDirectories(filesystem &filesystem_data, pseudo_inode &working_dir) {
     std::fstream fs_file;
     fs_file.open(filesystem_data.fs_file, std::ios::in);
 
@@ -52,8 +64,8 @@ std::vector<directory_item> getDirectories(filesystem &filesystem_data) {
     directory_item dirs_array[dirs_per_cluster];
 
     // nacteni slozek a vlozeni do vectoru
-    if (filesystem_data.current_dir.direct1 != 0) {
-        fs_file.seekp(filesystem_data.current_dir.direct1);
+    if (working_dir.direct1 != 0) {
+        fs_file.seekp(working_dir.direct1);
         fs_file.read(reinterpret_cast<char *>(&dirs_array), sizeof(dirs_array));
         for (int i = 0; i < dirs_per_cluster; i++) {
             if (dirs_array[i].inode) {
@@ -61,8 +73,8 @@ std::vector<directory_item> getDirectories(filesystem &filesystem_data) {
             }
         }
     }
-    if (filesystem_data.current_dir.direct2 != 0) {
-        fs_file.seekp(filesystem_data.current_dir.direct2);
+    if (working_dir.direct2 != 0) {
+        fs_file.seekp(working_dir.direct2);
 
         fs_file.read(reinterpret_cast<char *>(&dirs_array), sizeof(dirs_array));
         for (int i = 0; i < dirs_per_cluster; i++) {
@@ -71,8 +83,8 @@ std::vector<directory_item> getDirectories(filesystem &filesystem_data) {
             }
         }
     }
-    if (filesystem_data.current_dir.direct3 != 0) {
-        fs_file.seekp(filesystem_data.current_dir.direct3);
+    if (working_dir.direct3 != 0) {
+        fs_file.seekp(working_dir.direct3);
 
         fs_file.read(reinterpret_cast<char *>(&dirs_array), sizeof(dirs_array));
         for (int i = 0; i < dirs_per_cluster; i++) {
@@ -81,8 +93,8 @@ std::vector<directory_item> getDirectories(filesystem &filesystem_data) {
             }
         }
     }
-    if (filesystem_data.current_dir.direct4 != 0) {
-        fs_file.seekp(filesystem_data.current_dir.direct4);
+    if (working_dir.direct4 != 0) {
+        fs_file.seekp(working_dir.direct4);
         fs_file.read(reinterpret_cast<char *>(&dirs_array), sizeof(dirs_array));
         for (int i = 0; i < dirs_per_cluster; i++) {
             if (dirs_array[i].inode) {
@@ -90,8 +102,8 @@ std::vector<directory_item> getDirectories(filesystem &filesystem_data) {
             }
         }
     }
-    if (filesystem_data.current_dir.direct5 != 0) {
-        fs_file.seekp(filesystem_data.current_dir.direct5);
+    if (working_dir.direct5 != 0) {
+        fs_file.seekp(working_dir.direct5);
         fs_file.read(reinterpret_cast<char *>(&dirs_array), sizeof(dirs_array));
         for (int i = 0; i < dirs_per_cluster; i++) {
             if (dirs_array[i].inode) {
@@ -99,10 +111,10 @@ std::vector<directory_item> getDirectories(filesystem &filesystem_data) {
             }
         }
     }
-    if (filesystem_data.current_dir.indirect1 != 0) {
+    if (working_dir.indirect1 != 0) {
         uint32_t links_per_cluster = filesystem_data.super_block.cluster_size / sizeof(int32_t);
         int32_t links[links_per_cluster];
-        fs_file.seekp(filesystem_data.current_dir.indirect1);
+        fs_file.seekp(working_dir.indirect1);
         fs_file.read(reinterpret_cast<char *>(&links), sizeof(links));
         for (int i = 0; i < links_per_cluster; i++) {
             if (links[i] != 0) {
@@ -116,10 +128,10 @@ std::vector<directory_item> getDirectories(filesystem &filesystem_data) {
             }
         }
     }
-    if (filesystem_data.current_dir.indirect2 != 0) {
+    if (working_dir.indirect2 != 0) {
         uint32_t links_per_cluster = filesystem_data.super_block.cluster_size / sizeof(int32_t);
         int32_t links[links_per_cluster];
-        fs_file.seekp(filesystem_data.current_dir.indirect2);
+        fs_file.seekp(working_dir.indirect2);
         fs_file.read(reinterpret_cast<char *>(&links), sizeof(links));
         for (int i = 0; i < links_per_cluster; i++) {
             if (links[i] != 0) {
@@ -151,7 +163,7 @@ std::vector<directory_item> getDirectories(filesystem &filesystem_data) {
  * @return existuje adresar stejneho jmena?
  */
 bool isDirectoryExists(filesystem &filesystem_data, directory_item &dir) {
-    std::vector<directory_item> directories = getDirectories(filesystem_data);
+    std::vector<directory_item> directories = getDirectories(filesystem_data, filesystem_data.current_dir);
     for (auto &directory : directories) {
         directory.item_name;
         if (strcmp(dir.item_name, directory.item_name) == 0) {

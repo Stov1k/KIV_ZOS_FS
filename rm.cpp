@@ -339,7 +339,7 @@ void rmdir(filesystem &filesystem_data, std::string &a1) {
     pseudo_inode inode;
 
     // zjistim, zdali existuje adresar stejneho nazvu
-    std::vector<directory_item> directories = getDirectories(filesystem_data);
+    std::vector<directory_item> directories = getDirectories(filesystem_data, filesystem_data.current_dir);
     for (auto &directory : directories) {
         if (strcmp(a1.c_str(), directory.item_name) == 0) {
             fs_file.seekp(
@@ -392,7 +392,7 @@ void rm(filesystem &filesystem_data, std::string &a1) {
     pseudo_inode inode;
 
     // zjistim, zdali existuje soubor stejneho nazvu
-    std::vector<directory_item> directories = getDirectories(filesystem_data);
+    std::vector<directory_item> directories = getDirectories(filesystem_data, filesystem_data.current_dir);
     for (auto &directory : directories) {
         if (strcmp(a1.c_str(), directory.item_name) == 0) {
             fs_file.seekp(

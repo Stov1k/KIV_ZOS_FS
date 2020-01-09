@@ -11,6 +11,13 @@
 #include "zosfsstruct.h"
 
 /**
+ * Pocet adresaru, ktere lze ulozit do jednoho databloku
+ * @param filesystem_data filesystem
+ * @return pocet adresaru
+ */
+int32_t dirsPerCluster(filesystem &filesystem_data);
+
+/**
  * Rozdeleni cesty na adresare
  * @param path cesta
  * @return segments vektor adresaru
@@ -25,9 +32,11 @@ void printDirectories(const std::vector<directory_item> &directories);
 
 /**
  * Vrati vektor podadresaru v aktualnim adresari
+ * @param filesystem_data filesystem
+ * @param working_dir pracovni adresar
  * @return vektor adresaru
  */
-std::vector<directory_item> getDirectories(filesystem &filesystem_data);
+std::vector<directory_item> getDirectories(filesystem &filesystem_data, pseudo_inode &working_dir);
 
 /**
  * Vrati, zdali adresar tehoz jmena jiz existuje

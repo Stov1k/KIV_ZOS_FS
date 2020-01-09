@@ -18,6 +18,8 @@
 #include "pwd.h"
 #include "cd.h"
 #include "mkdir.h"
+#include "mv.h"
+#include "ls.h"
 #include <sys/stat.h>
 #include <cstdio>
 
@@ -203,37 +205,6 @@ void formatFS(int size) {
 }
 
 /**
- * Prikaz ls: vypise obsah aktualniho adresare
- */
-void ls() {
-    std::fstream input_file;
-    input_file.open(filesystem_data.fs_file, std::ios::in);
-    if (!input_file.is_open()) {
-        std::cout << "Nelze otevrit." << std::endl;
-    } else {
-        // skok na inode
-        input_file.seekp(filesystem_data.current_dir.direct1);
-
-        uint32_t dirs_per_cluster = filesystem_data.super_block.cluster_size / sizeof(directory_item);
-        directory_item directories[dirs_per_cluster];
-
-        input_file.read(reinterpret_cast<char *>(&directories), sizeof(directories));
-        std::cout << "#" << "\t" << "ND" << "\t" << "NAME" << "\t" << "SIZE" << std::endl;
-        for (int i = 0; i < dirs_per_cluster; i++) {
-            if (directories[i].inode) {
-                pseudo_inode inode;
-                input_file.seekp(filesystem_data.super_block.inode_start_address +
-                                 (directories[i].inode - 1) * sizeof(pseudo_inode));
-                input_file.read(reinterpret_cast<char *>(&inode), sizeof(pseudo_inode));
-                std::cout << i << "\t" << directories[i].inode << "\t" << directories[i].item_name << "\t"
-                          << inode.file_size << std::endl;
-            }
-        }
-    }
-    input_file.close();
-}
-
-/**
  * Hlavni
  * @param argc
  * @param argv
@@ -265,7 +236,7 @@ int main(int argc, char **argv) {
     // Nacteni fs
     openFS();
 
-    std::vector<directory_item> directories = getDirectories(filesystem_data);
+    std::vector<directory_item> directories = getDirectories(filesystem_data, filesystem_data.current_dir);
     printDirectories(directories);
 
     // Smycka prikazu
@@ -312,7 +283,7 @@ int main(int argc, char **argv) {
             int bitmap_size_bytes = (filesystem_data.super_block.inode_start_address -
                                      filesystem_data.super_block.bitmap_start_address);
             std::cout << "Obsah " << bitmap_size_bytes << std::endl;
-            ls();
+            ls(filesystem_data, filesystem_data.current_dir);
         } else if (cmd.size() > 0 && cmd[0] == "pwd") {
             pwd(filesystem_data);
         } else if (cmd.size() > 0 && cmd[0] == "mkdir") {
@@ -350,6 +321,12 @@ int main(int argc, char **argv) {
                 std::cout << "PATH NOT FOUND" << std::endl;
             } else {
                 outcp(filesystem_data, cmd[1], cmd[2]);
+            }
+        } else if (cmd.size() > 0 && cmd[0] == "mv") {
+            if (cmd.size() < 3) {
+                std::cout << "PATH NOT FOUND" << std::endl;
+            } else {
+                mv(filesystem_data, cmd[1], cmd[2]);
             }
         } else if (cmd.size() > 0 && cmd[0] == "cd") {
             if (cmd.size() == 1) {
