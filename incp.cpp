@@ -104,17 +104,17 @@ int32_t writeDatablock(filesystem &filesystem_data, int32_t *datablock, std::ifs
 void inputCopy(filesystem &filesystem_data, std::string &input, std::string &location) {
 
     // zjisti, zdali jiz soubor stejneho nazvu existuje
-    directory_item dir = getDirectory(0, location); // TODO: location pak predelat (bude moc byt uvadena cesta)
-    if (isDirectoryExists(filesystem_data, filesystem_data.current_dir, dir)) {
+    if (isDirectoryExists(filesystem_data, filesystem_data.current_dir, location)) {     // TODO: location pak predelat (bude moc byt uvadena cesta)
         std::cout << "EXIST" << std::endl;
         return;
     }
+    directory_item dir = createDirectoryItem(0, location); // TODO: location pak predelat (bude moc byt uvadena cesta)
 
     // spocte velikost input
     long filesize = getFilesize(input);
 
     // potreba volnych datablocku
-    uint32_t links_per_cluster = filesystem_data.super_block.cluster_size / sizeof(int32_t);
+    int32_t links_per_cluster = linksPerCluster(filesystem_data);
     //double datablock_needed = (double) (filesize) / (double) (filesystem_data.super_block.cluster_size);  // TODO: Udelat vypocet potreby databloku
 
     // zjisti dostupnou velikost // TODO: predelat podle volnych datablocku?
@@ -255,9 +255,9 @@ void inputCopy(filesystem &filesystem_data, std::string &input, std::string &loc
     fs_file.write(reinterpret_cast<const char *>(&dirs), sizeof(dirs));
 
     // zapis inode
-    fs_file.seekp(filesystem_data.super_block.inode_start_address + (inode.nodeid - 1) * sizeof(pseudo_inode));
     inode.isDirectory = false;
     inode.references++;
+    fs_file.seekp(getINodePosition(filesystem_data, inode.nodeid));
     fs_file.write(reinterpret_cast<const char *>(&inode), sizeof(pseudo_inode));
 
     cpin_file.close();

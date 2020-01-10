@@ -39,13 +39,22 @@ void printDirectories(const std::vector<directory_item> &directories);
 std::vector<directory_item> getDirectories(filesystem &filesystem_data, pseudo_inode &working_dir);
 
 /**
- * Vrati, zdali adresar tehoz jmena jiz existuje
+ * Smaze zaznam adresare/souboru directory do adresare working_dir
  * @param filesystem_data filesystem
  * @param working_dir pracovni adresar
- * @param dir adresar
- * @return existuje adresar stejneho jmena?
+ * @param directory zaznam adresare/souboru
+ * @return usech? (adresa databloku, kde byl zaznam smazan)
  */
-bool isDirectoryExists(filesystem &filesystem_data, pseudo_inode &working_dir, directory_item &dir);
+int32_t removeDirectoryItemEntry(filesystem &filesystem_data, pseudo_inode &working_dir, directory_item &directory);
+
+/**
+ * Prida zaznam adresare/souboru directory do adresare working_dir
+ * @param filesystem_data filesystem
+ * @param working_dir pracovni adresar
+ * @param directory zaznam adresare/souboru
+ * @return usech? (adresa databloku, kde je zaznam ulozen)
+ */
+int32_t addDirectoryItemEntry(filesystem &filesystem_data, pseudo_inode &working_dir, directory_item &directory);
 
 /**
  * Vrati referenci na adresar
@@ -53,7 +62,25 @@ bool isDirectoryExists(filesystem &filesystem_data, pseudo_inode &working_dir, d
  * @param name nazev adresare
  * @return reference na adresar
  */
-directory_item getDirectory(int32_t nodeid, std::string name);
+directory_item createDirectoryItem(int32_t nodeid, std::string name);
+
+/**
+ * Vrati referenci na adresar
+ * @param filesystem_data filesystem
+ * @param working_dir pracovni adresar
+ * @param name nezev adresare
+ * @return reference na adresar
+ */
+directory_item * getDirectoryItem(filesystem &filesystem_data, pseudo_inode &working_dir, std::string name);
+
+/**
+ * Vrati, zdali adresar tehoz jmena jiz existuje
+ * @param filesystem_data filesystem
+ * @param working_dir pracovni adresar
+ * @param name nezev adresare
+ * @return existuje adresar stejneho jmena?
+ */
+bool isDirectoryExists(filesystem &filesystem_data, pseudo_inode &working_dir, std::string name);
 
 /**
  * Vrati nadrazeny adresar

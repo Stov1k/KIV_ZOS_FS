@@ -166,13 +166,13 @@ void formatFS(int size) {
     inode.file_size = filesystem_data.super_block.cluster_size;
 
     // aktualni adresar
-    dir = getDirectory(inode.nodeid, ".");
+    dir = createDirectoryItem(inode.nodeid, ".");
 
     int32_t dirs_per_cluster = cluster_size / sizeof(directory_item);
 
     // predchozi adresar
     directory_item dir_parrent;
-    dir_parrent = getDirectory(inode.nodeid, "..");;
+    dir_parrent = createDirectoryItem(inode.nodeid, "..");;
 
     // nastaveni referenci na adresare
     directory_item directories[dirs_per_cluster];

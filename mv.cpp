@@ -12,7 +12,7 @@
 #include "directory.h"
 #include "inode.h"
 
-pseudo_inode *moveTo(filesystem &filesystem_data, std::string &s1) {
+pseudo_inode *moveToParrent(filesystem &filesystem_data, std::string &s1) {
     // cesta rozdelena na adresare
     std::vector<std::string> segments = splitPath(s1);
     // otevreni souboru fs
@@ -81,30 +81,40 @@ pseudo_inode *moveTo(filesystem &filesystem_data, std::string &s1) {
 void mv(filesystem &filesystem_data, std::string &s1, std::string &s2) {
 
     std::vector<std::string> s1_segments = splitPath(s1);
-    std::vector<std::string> s2_segments = splitPath(s2);
-
-    pseudo_inode *old_path_ptr = moveTo(filesystem_data, s1);
-    pseudo_inode *new_path_ptr = moveTo(filesystem_data, s2);
-
-    // otevreni souboru fs
-    std::fstream fs_file;
-    fs_file.open(filesystem_data.fs_file, std::ios::in | std::ios::out | std::ios::binary);
-
-    if (old_path_ptr != nullptr && new_path_ptr != nullptr) {
-        pseudo_inode old_path = *old_path_ptr;
-        std::cout << "Old name: " << s1_segments.back() << " New name: " << s2_segments.back() << std::endl;
-        directory_item old_dir = getDirectory(0, s1_segments.back());
-        if (isDirectoryExists(filesystem_data, old_path, old_dir)) {
-            pseudo_inode *old_inode_ptr = getFileINode(filesystem_data, old_path, s1_segments.back());
-            if(old_inode_ptr != nullptr) {
-                pseudo_inode old_inode = *old_inode_ptr;
-                std::cout << old_inode.nodeid << std::endl;
-            }
+    pseudo_inode *a1_path_ptr = moveToParrent(filesystem_data, s1);
+    pseudo_inode a1_path;
+    directory_item s1_dir;
+    if(a1_path_ptr != nullptr) {
+        a1_path = *a1_path_ptr;        // reference na nadrazeny adresar
+        directory_item * s1_dir_ptr = getDirectoryItem(filesystem_data,a1_path, s1_segments.back());
+        if(s1_dir_ptr != nullptr) {
+            s1_dir = *s1_dir_ptr;
+            std::cout << "File name: " << s1_dir.item_name << std::endl;
         } else {
-            std::cout << old_dir.item_name << std::endl;
+            return;
+        }
+    } else {
+        return;
+    }
+
+    std::vector<std::string> s2_segments = splitPath(s2);
+    pseudo_inode *a2_path_ptr = moveToParrent(filesystem_data, s2);
+    if(a2_path_ptr != nullptr) {
+        pseudo_inode a2_path = *a2_path_ptr;        // reference na nadrazeny adresar
+        directory_item * s2_dir_ptr = getDirectoryItem(filesystem_data,a2_path, s2_segments.back());
+        if(s2_dir_ptr == nullptr) {
+            directory_item s2_dir = createDirectoryItem(s1_dir.inode, s2_segments.back());    // nazev souboru
+            std::cout << "File name: " << s2_dir.item_name << " Inode" << s2_dir.inode << std::endl;
+            int32_t address = addDirectoryItemEntry(filesystem_data, a2_path, s2_dir);
+            if(address) {
+                removeDirectoryItemEntry(filesystem_data, a1_path, s1_dir);
+                std::cout << "OK" << std::endl;
+            }
+
+        } else {
+            directory_item s2_dir = *s2_dir_ptr;
+            std::cout << "File exist " << s2_dir.item_name << "!" << std::endl;
         }
     }
 
-    // uzavreni souboru fs
-    fs_file.close();
 }

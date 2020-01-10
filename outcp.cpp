@@ -83,6 +83,8 @@ void outcp(filesystem &filesystem_data, std::string &s1, std::string &s2) {
 
         std::cout << std::endl;
 
+        addDatablockToINode(filesystem_data, fs_file, inode);
+
         output_file.close();
         fs_file.close();
     } else {

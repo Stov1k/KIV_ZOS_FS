@@ -15,6 +15,13 @@
 int32_t linksPerCluster(filesystem &filesystem_data);
 
 /**
+ * Pocet dostupnych neobsazenych databloku na filesystemu
+ * @param filesystem_data filesystem
+ * @return pocet dostupnych neobsazenych databloku
+ */
+int32_t availableDatablocks(filesystem &filesystem_data);
+
+/**
  * Vrati volnou pozici databloku
  * @param buf buffer - pozice v bloku, pozice v byte, bitmap byte, poradi bytu
  * @return vrati, zdali existuje volna pozice
@@ -38,6 +45,15 @@ int32_t createIndirectDatablock(filesystem &filesystem_data, std::fstream &fs_fi
  * @param inode
  * @return vector adres databloku
  */
-std::vector<int32_t> usedDatablockByINode(filesystem &filesystem_data, std::fstream &fs_file, pseudo_inode inode);
+std::vector<int32_t> usedDatablockByINode(filesystem &filesystem_data, std::fstream &fs_file, pseudo_inode &inode);
+
+/**
+ * Prida datablok
+ * @param filesystem_data filesystem
+ * @param fs_file otevreny soubor filesystemu
+ * @param inode adresar/soubor
+ * @return adresa databloku
+ */
+int32_t addDatablockToINode(filesystem &filesystem_data, std::fstream &fs_file, pseudo_inode &inode);
 
 #endif //ZOSFS_DATABLOCK_H

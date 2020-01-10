@@ -39,14 +39,14 @@ void mkdir(filesystem &filesystem_data, std::string &a1) {
         }
 
         // novy adresar
-        directory_item dir = getDirectory(0, segments[i]);
+        directory_item dir = createDirectoryItem(0, segments[i]);
 
         // nalezeny volny inode
         pseudo_inode inode;
         pseudo_inode *inode_ptr;
 
         // zjistim, zdali jiz neexistuje adresar stejneho nazvu
-        if (isDirectoryExists(filesystem_data, filesystem_data.current_dir, dir)) {
+        if (isDirectoryExists(filesystem_data, filesystem_data.current_dir, segments[i])) {
             force_break = -1;   // EXISTS
             cd(filesystem_data, segments[i], false, true);
             continue;
@@ -110,11 +110,11 @@ void mkdir(filesystem &filesystem_data, std::string &a1) {
 
         // aktualni adresar
         directory_item dir_dot;
-        dir_dot = getDirectory(inode.nodeid, ".");
+        dir_dot = createDirectoryItem(inode.nodeid, ".");
 
         // predchozi adresar
         directory_item dir_parrent;
-        dir_parrent = getDirectory(filesystem_data.current_dir.nodeid, "..");
+        dir_parrent = createDirectoryItem(filesystem_data.current_dir.nodeid, "..");
 
         directory_item subdirectories[dirs_per_cluster];
         subdirectories[0] = dir_dot;                       // .
