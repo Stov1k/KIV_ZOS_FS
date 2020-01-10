@@ -328,6 +328,12 @@ int main(int argc, char **argv) {
             } else {
                 mv(filesystem_data, cmd[1], cmd[2]);
             }
+        } else if (cmd.size() > 0 && cmd[0] == "cp") {
+            if (cmd.size() < 3) {
+                std::cout << "PATH NOT FOUND" << std::endl;
+            } else {
+                cp(filesystem_data, cmd[1], cmd[2]);
+            }
         } else if (cmd.size() > 0 && cmd[0] == "cd") {
             if (cmd.size() == 1) {
                 filesystem_data.current_dir = filesystem_data.root_dir;

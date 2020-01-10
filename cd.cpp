@@ -78,7 +78,9 @@ pseudo_inode *cd(filesystem &filesystem_data, std::string &a1, bool verbose, boo
     // uzavreni souboru fs
     fs_file.close();
 
-    return &working_dir;
+    // reference na pracovni adresar
+    pseudo_inode * working_dir_ptr = &working_dir;
+    return working_dir_ptr;
 }
 
 /**

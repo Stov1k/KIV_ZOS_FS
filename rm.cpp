@@ -26,7 +26,7 @@ bool isDirectoryEmpty(filesystem &filesystem_data, std::fstream &fs_file, pseudo
     directory_item directories[dirs_per_cluster];
 
     // platne adresy na databloky
-    std::vector<int32_t> addresses = usedDatablockByINode(filesystem_data, fs_file, inode);
+    std::vector<int32_t> addresses = usedDatablockByINode(filesystem_data, fs_file, inode, false);
 
     // prochazeni adres databloku
     for (auto &address : addresses) {
@@ -57,7 +57,7 @@ removeLinkInParrentDir(filesystem &filesystem_data, std::fstream &fs_file, pseud
     directory_item directories[dirs_per_cluster];
 
     // platne adresy na databloky
-    std::vector<int32_t> addresses = usedDatablockByINode(filesystem_data, fs_file, parrent);
+    std::vector<int32_t> addresses = usedDatablockByINode(filesystem_data, fs_file, parrent, false);
 
     // prochazeni adres databloku
     for (auto &address : addresses) {
@@ -113,7 +113,7 @@ void removeDatablockPositionInBitmap(filesystem &filesystem_data, std::fstream &
  */
 void removeDatablocksPositionInBitmap(filesystem &filesystem_data, std::fstream &fs_file, pseudo_inode &inode) {
     // platne adresy na databloky
-    std::vector<int32_t> addresses = usedDatablockByINode(filesystem_data, fs_file, inode);
+    std::vector<int32_t> addresses = usedDatablockByINode(filesystem_data, fs_file, inode, false);
 
     // prochazeni adres databloku
     for (auto &address : addresses) {

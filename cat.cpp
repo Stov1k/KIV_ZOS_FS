@@ -13,6 +13,7 @@
 #include "inode.h"
 #include "directory.h"
 #include "datablock.h"
+#include "cd.h"
 
 /**
  * Vypise obsah bufferu
@@ -48,9 +49,20 @@ void readDataBlock(filesystem &filesystem_data, std::fstream &fs_file, int32_t l
  * @param s1 soubor
  */
 void cat(filesystem &filesystem_data, std::string &s1) {
+
+    // cesta rozdelena na adresare
+    std::vector<std::string> segments = splitPath(s1);
+
+    // pracovni adresar
+    pseudo_inode *working_dir_ptr = cd(filesystem_data, s1, false, false);
+    pseudo_inode working_dir = filesystem_data.current_dir;
+    if(working_dir_ptr != nullptr) {
+        working_dir = *working_dir_ptr;
+    }
+
     // najdu odpovidajici inode
     pseudo_inode inode;
-    pseudo_inode *inode_ptr = getFileINode(filesystem_data, filesystem_data.current_dir, s1);
+    pseudo_inode *inode_ptr = getFileINode(filesystem_data, working_dir, segments.back());
     if (inode_ptr != nullptr) {
         inode = *inode_ptr;
 
@@ -58,7 +70,7 @@ void cat(filesystem &filesystem_data, std::string &s1) {
         fs_file.open(filesystem_data.fs_file, std::ios::in | std::ios::out | std::ios::binary);
 
         // platne adresy na databloky
-        std::vector<int32_t> addresses = usedDatablockByINode(filesystem_data, fs_file, inode);
+        std::vector<int32_t> addresses = usedDatablockByINode(filesystem_data, fs_file, inode, false);
 
         // prochazeni adres databloku
         for (auto &address : addresses) {

@@ -155,9 +155,10 @@ int32_t createIndirectDatablock(filesystem &filesystem_data, std::fstream &fs_fi
  * @param filesystem_data filesystem
  * @param fs_file otevreny soubor filesystemu
  * @param inode adresar/soubor
+ * @param structural_included vcetne strukturnich inodu (neprime odkazy)
  * @return vector adres databloku
  */
-std::vector<int32_t> usedDatablockByINode(filesystem &filesystem_data, std::fstream &fs_file, pseudo_inode &inode) {
+std::vector<int32_t> usedDatablockByINode(filesystem &filesystem_data, std::fstream &fs_file, pseudo_inode &inode, bool structural_included) {
     std::vector<int32_t> addresses;
     if (inode.direct1) addresses.push_back(inode.direct1);
     if (inode.direct2) addresses.push_back(inode.direct2);
@@ -168,6 +169,7 @@ std::vector<int32_t> usedDatablockByINode(filesystem &filesystem_data, std::fstr
         int32_t links_per_cluster = linksPerCluster(filesystem_data);
         int32_t links[links_per_cluster];
         if (inode.indirect1) {
+            if(structural_included) addresses.push_back(inode.indirect1);
             fs_file.seekp(inode.indirect1);
             fs_file.read(reinterpret_cast<char *>(&links), sizeof(links));
             for (int i = 0; i < links_per_cluster; i++) {
@@ -177,11 +179,13 @@ std::vector<int32_t> usedDatablockByINode(filesystem &filesystem_data, std::fstr
             }
         }
         if (inode.indirect2) {
+            if(structural_included) addresses.push_back(inode.indirect2);
             int32_t sublinks[links_per_cluster];
             fs_file.seekp(inode.indirect2);
             fs_file.read(reinterpret_cast<char *>(&links), sizeof(links));
             for (int i = 0; i < links_per_cluster; i++) {
                 if (links[i]) {
+                    if(structural_included) addresses.push_back(links[i]);
                     fs_file.seekp(links[i]);
                     fs_file.read(reinterpret_cast<char *>(&sublinks), sizeof(sublinks));
                     for (int j = 0; j < links_per_cluster; j++) {
@@ -229,7 +233,7 @@ int32_t addDatablockToINode(filesystem &filesystem_data, std::fstream &fs_file, 
     int32_t maximum_datablocks_per_inode = maximumDatablocksPerINode(filesystem_data);
     int32_t used_datablocks_by_inode = 0;
     // platne adresy na databloky
-    std::vector<int32_t> addresses = usedDatablockByINode(filesystem_data, fs_file, inode);
+    std::vector<int32_t> addresses = usedDatablockByINode(filesystem_data, fs_file, inode, false);
     // prochazeni adres databloku
     for (auto &address : addresses) {
         used_datablocks_by_inode++;

@@ -42,10 +42,11 @@ int32_t createIndirectDatablock(filesystem &filesystem_data, std::fstream &fs_fi
  * Vrati vector adres pouzitych databloku
  * @param filesystem_data filesystem
  * @param fs_file otevreny soubor filesystemu
- * @param inode
+ * @param inode adresar/soubor
+ * @param structural_included vcetne strukturnich inodu (neprime odkazy)
  * @return vector adres databloku
  */
-std::vector<int32_t> usedDatablockByINode(filesystem &filesystem_data, std::fstream &fs_file, pseudo_inode &inode);
+std::vector<int32_t> usedDatablockByINode(filesystem &filesystem_data, std::fstream &fs_file, pseudo_inode &inode, bool structural_included);
 
 /**
  * Prida datablok

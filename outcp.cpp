@@ -69,7 +69,7 @@ void outcp(filesystem &filesystem_data, std::string &s1, std::string &s2) {
         output_file.open(s2, std::ios::in | std::ios::out | std::ios::binary);
 
         // platne adresy na databloky
-        std::vector<int32_t> addresses = usedDatablockByINode(filesystem_data, fs_file, inode);
+        std::vector<int32_t> addresses = usedDatablockByINode(filesystem_data, fs_file, inode, false);
 
         long remaining = inode.file_size;                               // zbyva exportovat bytu
         long to_export = filesystem_data.super_block.cluster_size;      // bude exportovano nasledujici iteraci

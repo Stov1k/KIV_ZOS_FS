@@ -11,6 +11,8 @@
 #include "zosfsstruct.h"
 #include "directory.h"
 #include "inode.h"
+#include "cd.h"
+#include "datablock.h"
 
 pseudo_inode *moveToParrent(filesystem &filesystem_data, std::string &s1) {
     // cesta rozdelena na adresare
@@ -117,4 +119,62 @@ void mv(filesystem &filesystem_data, std::string &s1, std::string &s2) {
         }
     }
 
+}
+
+/**
+ * Zkopiruje soubor s1 do umisteni s2
+ * @param filesystem_data filesystem
+ * @param s1 nazev souboru
+ * @param s2 nazev souboru
+ */
+void cp(filesystem &filesystem_data, std::string &s1, std::string &s2) {
+
+    // cesta rozdelena na adresare
+    std::vector<std::string> from_segments = splitPath(s1);
+    std::vector<std::string> to_segments = splitPath(s1);
+
+    // pracovni adresare
+    pseudo_inode *from_dir_ptr = cd(filesystem_data, s1, false, false);
+    pseudo_inode from_dir = filesystem_data.current_dir;
+    if(from_dir_ptr != nullptr) {
+        from_dir = *from_dir_ptr;
+    } else {
+        std::cout << "SOURCE DIRECTORY DOES NOT EXISTS!" << std::endl;
+        return;
+    }
+
+    pseudo_inode *to_dir_ptr = cd(filesystem_data, s1, false, false);
+    pseudo_inode to_dir = filesystem_data.current_dir;
+    if(to_dir_ptr != nullptr) {
+        to_dir = *to_dir_ptr;
+    } else {
+        std::cout << "DESTINATION DIRECTORY DOES NOT EXISTS!" << std::endl;
+        return;
+    }
+
+    // najdu odpovidajici inode zdroje
+    pseudo_inode source_inode;
+    pseudo_inode *source_inode_ptr = getFileINode(filesystem_data, from_dir, from_segments.back());
+    if (source_inode_ptr != nullptr) {
+        source_inode = *source_inode_ptr;
+        source_inode.file_size;
+    } else {
+        std::cout << "SOURCE FILE DOES NOT EXISTS!" << std::endl;
+        return;
+    }
+
+    // platne adresy na databloky
+    std::fstream fs_file;
+    fs_file.open(filesystem_data.fs_file, std::ios::in);
+    std::vector<int32_t> source_addresses = usedDatablockByINode(filesystem_data, fs_file, source_inode, true);
+    int32_t blocks_used = source_addresses.size();
+    fs_file.close();
+
+    // dostupnych volnych databloku
+    int32_t blocks_available = availableDatablocks(filesystem_data);
+
+    if(blocks_available < blocks_used) {
+        std::cout << "NOT ENOUGH SPACE!" << std::endl;
+        return;
+    }
 }

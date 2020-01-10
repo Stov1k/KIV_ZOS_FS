@@ -9,6 +9,7 @@
 #include "zosfsstruct.h"
 #include "directory.h"
 #include "inode.h"
+#include "datablock.h"
 
 /**
  * Vypise adresy databloku
@@ -17,52 +18,12 @@
  * @param inode soubor
  */
 void printDatablocksAddresses(filesystem &filesystem_data, std::fstream &fs_file, pseudo_inode &inode) {
-    if (inode.direct1 != 0) {
-        std::cout << inode.direct1 << " ";
-    }
-    if (inode.direct2 != 0) {
-        std::cout << inode.direct2 << " ";
-    }
-    if (inode.direct3 != 0) {
-        std::cout << inode.direct3 << " ";
-    }
-    if (inode.direct4 != 0) {
-        std::cout << inode.direct4 << " ";
-    }
-    if (inode.direct5 != 0) {
-        std::cout << inode.direct5 << " ";
-    }
-    if (inode.indirect1 != 0) {
-        std::cout << inode.indirect1 << " ";
-        uint32_t links_per_cluster = filesystem_data.super_block.cluster_size / sizeof(int32_t);
-        int32_t links[links_per_cluster];
-        fs_file.seekp(inode.indirect1);
-        fs_file.read(reinterpret_cast<char *>(&links), sizeof(links));
-        for (int i = 0; i < links_per_cluster; i++) {
-            if (links[i] != 0) {
-                std::cout << links[i] << " ";
-            }
-        }
-    }
-    if (inode.indirect2 != 0) {
-        std::cout << inode.indirect2 << " ";
-        uint32_t links_per_cluster = filesystem_data.super_block.cluster_size / sizeof(int32_t);
-        int32_t links[links_per_cluster];
-        fs_file.seekp(inode.indirect2);
-        fs_file.read(reinterpret_cast<char *>(&links), sizeof(links));
-        for (int i = 0; i < links_per_cluster; i++) {
-            if (links[i] != 0) {
-                std::cout << links[i] << " ";
-                int32_t sublinks[links_per_cluster];
-                fs_file.seekp(links[i]);
-                fs_file.read(reinterpret_cast<char *>(&sublinks), sizeof(sublinks));
-                for (int j = 0; j < links_per_cluster; j++) {
-                    if (sublinks[j] != 0) {
-                        std::cout << sublinks[j] << " ";
-                    }
-                }
-            }
-        }
+    // platne adresy na databloky
+    std::vector<int32_t> addresses = usedDatablockByINode(filesystem_data, fs_file, inode, true);
+    std::cout << addresses.size() << " BLOCKS | ";
+    // prochazeni adres databloku
+    for (auto &address : addresses) {
+        std::cout << address << " ";
     }
 }
 

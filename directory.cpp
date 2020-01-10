@@ -64,7 +64,7 @@ std::vector<directory_item> getDirectories(filesystem &filesystem_data, pseudo_i
     directory_item dirs_array[dirs_per_cluster];
 
     // platne adresy na databloky
-    std::vector<int32_t> addresses = usedDatablockByINode(filesystem_data, fs_file, working_dir);
+    std::vector<int32_t> addresses = usedDatablockByINode(filesystem_data, fs_file, working_dir, false);
 
     // prochazeni adres databloku
     for (auto &address : addresses) {
@@ -103,7 +103,7 @@ int32_t removeDirectoryItemEntry(filesystem &filesystem_data, pseudo_inode &work
     directory_item directories[dirs_per_cluster];
 
     // platne adresy na databloky
-    std::vector<int32_t> addresses = usedDatablockByINode(filesystem_data, fs_file, working_dir);
+    std::vector<int32_t> addresses = usedDatablockByINode(filesystem_data, fs_file, working_dir, false);
 
     // zmena na adrese
     int32_t record_address = 0;
@@ -156,7 +156,7 @@ int32_t addDirectoryItemEntry(filesystem &filesystem_data, pseudo_inode &working
     directory_item directories[dirs_per_cluster];
 
     // platne adresy na databloky
-    std::vector<int32_t> addresses = usedDatablockByINode(filesystem_data, fs_file, working_dir);
+    std::vector<int32_t> addresses = usedDatablockByINode(filesystem_data, fs_file, working_dir, false);
 
     // zaznamenano na adresu
     int32_t record_address = 0;

@@ -26,7 +26,7 @@ getDirectoryName(filesystem &filesystem_data, std::fstream &fs_file, pseudo_inod
     directory_item directories[dirs_per_cluster];
 
     // platne adresy na databloky
-    std::vector<int32_t> addresses = usedDatablockByINode(filesystem_data, fs_file, parrent);
+    std::vector<int32_t> addresses = usedDatablockByINode(filesystem_data, fs_file, parrent, false);
 
     // prochazeni adres databloku
     for (auto &address : addresses) {
