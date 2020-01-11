@@ -204,7 +204,6 @@ void cp(filesystem &filesystem_data, std::string &s1, std::string &s2) {
         target_inode = *target_inode_ptr;
         target_inode.isDirectory = source_inode.isDirectory;
         target_inode.file_size = source_inode.file_size;
-        std::cout << "New INODE ID: " << target_inode.nodeid << std::endl;
         fs_file.seekp(getINodePosition(filesystem_data, target_inode.nodeid));
         fs_file.write(reinterpret_cast<const char *>(&target_inode), sizeof(pseudo_inode));
         directory_item target_dir = createDirectoryItem(target_inode.nodeid, to_segments.back());
@@ -216,10 +215,8 @@ void cp(filesystem &filesystem_data, std::string &s1, std::string &s2) {
 
     // platne adresy na databloky
     source_addresses = usedDatablockByINode(filesystem_data, fs_file, source_inode, false);
-    std::cout << source_addresses.size() << " BLOCKS | ";
     // prochazeni adres databloku
     for (auto &address : source_addresses) {
-        std::cout << address << " ";
         int32_t obtained_address = addDatablockToINode(filesystem_data, fs_file, target_inode);
         copyDataBlock(filesystem_data, fs_file, address, obtained_address);
     }

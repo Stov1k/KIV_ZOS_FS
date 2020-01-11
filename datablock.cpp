@@ -294,6 +294,19 @@ int32_t addDatablockToINode(filesystem &filesystem_data, std::fstream &fs_file, 
                     fs_file.seekp(inode.indirect2);
                     fs_file.read(reinterpret_cast<char *>(&links), sizeof(links));
                     for (int i = 0; i < links_per_cluster; i++) {
+                        if(!links[i]) {
+                            links[i] = createIndirectDatablock(filesystem_data, fs_file);
+                            avaible = avaible - 1;
+                            fs_file.seekp(links[i]);
+                            fs_file.read(reinterpret_cast<char *>(&sublinks), sizeof(sublinks));
+                            if(avaible) {
+                                sublinks[0] = castDatablock(filesystem_data, fs_file);
+                                datablock_position = sublinks[0];
+                                // aktualizace odkazu
+                                fs_file.seekp(inode.indirect2);
+                                fs_file.write(reinterpret_cast<const char *>(&links), filesystem_data.super_block.cluster_size);
+                            }
+                        }
                         if (links[i]) {
                             fs_file.seekp(links[i]);
                             fs_file.read(reinterpret_cast<char *>(&sublinks), sizeof(sublinks));
@@ -303,21 +316,9 @@ int32_t addDatablockToINode(filesystem &filesystem_data, std::fstream &fs_file, 
                                     datablock_position = sublinks[j];
                                     // aktualizace odkazu
                                     fs_file.seekp(links[i]);
-                                    fs_file.write(reinterpret_cast<const char *>(&links), filesystem_data.super_block.cluster_size);
+                                    fs_file.write(reinterpret_cast<const char *>(&sublinks), filesystem_data.super_block.cluster_size);
                                     break;
                                 }
-                            }
-                        } else {
-                            links[i] = createIndirectDatablock(filesystem_data, fs_file);
-                            avaible = avaible - 1;
-                            fs_file.seekp(links[i]);
-                            fs_file.read(reinterpret_cast<char *>(&sublinks), sizeof(sublinks));
-                            if(avaible) {
-                                sublinks[0] = castDatablock(filesystem_data, fs_file);
-                                datablock_position = sublinks[0];
-                                // aktualizace odkazu
-                                fs_file.seekp(links[i]);
-                                fs_file.write(reinterpret_cast<const char *>(&links), filesystem_data.super_block.cluster_size);
                             }
                         }
                         if(datablock_position || !avaible) break;
