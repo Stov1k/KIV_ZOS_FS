@@ -122,6 +122,28 @@ void mv(filesystem &filesystem_data, std::string &s1, std::string &s2) {
 }
 
 /**
+ * Zkopireje zdrojovy datablok do ciloveho databloku
+ * @param filesystem_data informace filesystemu
+ * @param fs_file otevreny soubor na pseudoNTFS
+ * @param source_address pocatecni pozice zdrojoveho datablocku
+ * @param target_address pocatecni pozice ciloveho datablocku
+ */
+void copyDataBlock(filesystem &filesystem_data, std::fstream &fs_file, int32_t source_address, int32_t target_address) {
+    int32_t block_size = filesystem_data.super_block.cluster_size;
+    // priprava bufferu
+    char buffer[block_size];
+    memset(buffer, EOF, block_size);
+    // presun na pozici zdroje
+    fs_file.seekp(source_address);
+    fs_file.read(buffer, block_size);
+    // presun na pozici cile
+    fs_file.seekp(target_address);
+    fs_file.write(buffer, block_size);
+
+    //std::cout << "OLD ADDRESS: " << source_address << " NEW ADDRESS: " << target_address << std::endl;
+}
+
+/**
  * Zkopiruje soubor s1 do umisteni s2
  * @param filesystem_data filesystem
  * @param s1 nazev souboru
@@ -131,7 +153,7 @@ void cp(filesystem &filesystem_data, std::string &s1, std::string &s2) {
 
     // cesta rozdelena na adresare
     std::vector<std::string> from_segments = splitPath(s1);
-    std::vector<std::string> to_segments = splitPath(s1);
+    std::vector<std::string> to_segments = splitPath(s2);
 
     // pracovni adresare
     pseudo_inode *from_dir_ptr = cd(filesystem_data, s1, false, false);
@@ -143,7 +165,7 @@ void cp(filesystem &filesystem_data, std::string &s1, std::string &s2) {
         return;
     }
 
-    pseudo_inode *to_dir_ptr = cd(filesystem_data, s1, false, false);
+    pseudo_inode *to_dir_ptr = cd(filesystem_data, s2, false, false);
     pseudo_inode to_dir = filesystem_data.current_dir;
     if(to_dir_ptr != nullptr) {
         to_dir = *to_dir_ptr;
@@ -157,7 +179,6 @@ void cp(filesystem &filesystem_data, std::string &s1, std::string &s2) {
     pseudo_inode *source_inode_ptr = getFileINode(filesystem_data, from_dir, from_segments.back());
     if (source_inode_ptr != nullptr) {
         source_inode = *source_inode_ptr;
-        source_inode.file_size;
     } else {
         std::cout << "SOURCE FILE DOES NOT EXISTS!" << std::endl;
         return;
@@ -165,10 +186,9 @@ void cp(filesystem &filesystem_data, std::string &s1, std::string &s2) {
 
     // platne adresy na databloky
     std::fstream fs_file;
-    fs_file.open(filesystem_data.fs_file, std::ios::in);
+    fs_file.open(filesystem_data.fs_file, std::ios::in | std::ios::out | std::ios::binary);
     std::vector<int32_t> source_addresses = usedDatablockByINode(filesystem_data, fs_file, source_inode, true);
     int32_t blocks_used = source_addresses.size();
-    fs_file.close();
 
     // dostupnych volnych databloku
     int32_t blocks_available = availableDatablocks(filesystem_data);
@@ -177,4 +197,36 @@ void cp(filesystem &filesystem_data, std::string &s1, std::string &s2) {
         std::cout << "NOT ENOUGH SPACE!" << std::endl;
         return;
     }
+
+    // najdu volny inode
+    pseudo_inode target_inode;
+    pseudo_inode *target_inode_ptr;
+    target_inode_ptr = getFreeINode(filesystem_data);
+    if (target_inode_ptr != nullptr) {
+        target_inode = *target_inode_ptr;
+        target_inode.isDirectory = source_inode.isDirectory;
+        target_inode.file_size = source_inode.file_size;
+        std::cout << "New INODE ID: " << target_inode.nodeid << std::endl;
+        fs_file.seekp(getINodePosition(filesystem_data, target_inode.nodeid));
+        fs_file.write(reinterpret_cast<const char *>(&target_inode), sizeof(pseudo_inode));
+        directory_item target_dir = createDirectoryItem(target_inode.nodeid, to_segments.back());
+        int32_t address = addDirectoryItemEntry(filesystem_data, to_dir, target_dir);
+    } else {
+        std::cout << "NO FREE INODE LEFT!" << std::endl;
+        return;
+    }
+
+    // platne adresy na databloky
+    source_addresses = usedDatablockByINode(filesystem_data, fs_file, source_inode, false);
+    std::cout << source_addresses.size() << " BLOCKS | ";
+    // prochazeni adres databloku
+    for (auto &address : source_addresses) {
+        std::cout << address << " ";
+        int32_t obtained_address = addDatablockToINode(filesystem_data, fs_file, target_inode);
+        copyDataBlock(filesystem_data, fs_file, address, obtained_address);
+    }
+
+    fs_file.close();
 }
+
+
