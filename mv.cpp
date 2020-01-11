@@ -139,8 +139,6 @@ void copyDataBlock(filesystem &filesystem_data, std::fstream &fs_file, int32_t s
     // presun na pozici cile
     fs_file.seekp(target_address);
     fs_file.write(buffer, block_size);
-
-    //std::cout << "OLD ADDRESS: " << source_address << " NEW ADDRESS: " << target_address << std::endl;
 }
 
 /**
