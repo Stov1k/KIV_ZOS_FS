@@ -54,7 +54,7 @@ void readDataBlock(filesystem &filesystem_data, std::fstream &fs_file, std::fstr
 void outcp(filesystem &filesystem_data, std::string &s1, std::string &s2) {
     // najdu odpovidajici inode
     pseudo_inode inode;
-    pseudo_inode *inode_ptr = getFileINode(filesystem_data, filesystem_data.current_dir, s1);
+    pseudo_inode *inode_ptr = getFileINode(filesystem_data, filesystem_data.current_dir, s1, false);
     if (inode_ptr != nullptr) {
         inode = *inode_ptr;
 

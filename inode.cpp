@@ -60,8 +60,10 @@ pseudo_inode *getFreeINode(filesystem &filesystem_data) {
  * @param filesystem_data filesystem
  * @param working_dir pracovni adresar
  * @param s1 nazev souboru
+ * @param verbose vypisovani zprav
+ * reference na inode souboru
  */
-pseudo_inode *getFileINode(filesystem &filesystem_data, pseudo_inode &working_dir, std::string &s1) {
+pseudo_inode *getFileINode(filesystem &filesystem_data, pseudo_inode &working_dir, std::string &s1, bool verbose) {
     std::fstream input_file;
     input_file.open(filesystem_data.fs_file, std::ios::in | std::ios::out | std::ios::binary);
 
@@ -76,9 +78,10 @@ pseudo_inode *getFileINode(filesystem &filesystem_data, pseudo_inode &working_di
             input_file.seekp(getINodePosition(filesystem_data, directory.inode));
             input_file.read(reinterpret_cast<char *>(&inode), sizeof(pseudo_inode));
             if (inode.isDirectory) {
-                std::cout << "FILE IS DIRECTORY" << std::endl;
+                if(verbose) {
+                    std::cout << "FILE IS DIRECTORY" << std::endl;
+                }
             } else {
-                std::cout << "OBSAH" << std::endl;
                 inode_ptr = &inode;
             }
             break;

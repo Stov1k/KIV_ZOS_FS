@@ -26,8 +26,10 @@ pseudo_inode *getFreeINode(filesystem &filesystem_data);
  * @param filesystem_data filesystem
  * @param working_dir pracovni adresar
  * @param s1 nazev souboru
+ * @param verbose vypisovani zprav
+ * reference na inode souboru
  */
-pseudo_inode *getFileINode(filesystem &filesystem_data, pseudo_inode &working_dir, std::string &s1);
+pseudo_inode *getFileINode(filesystem &filesystem_data, pseudo_inode &working_dir, std::string &s1, bool verbose);
 
 /**
  * Vrati referenci na inode adresare nebo souboru

@@ -174,7 +174,7 @@ void cp(filesystem &filesystem_data, std::string &s1, std::string &s2) {
 
     // najdu odpovidajici inode zdroje
     pseudo_inode source_inode;
-    pseudo_inode *source_inode_ptr = getFileINode(filesystem_data, from_dir, from_segments.back());
+    pseudo_inode *source_inode_ptr = getFileINode(filesystem_data, from_dir, from_segments.back(), false);
     if (source_inode_ptr != nullptr) {
         source_inode = *source_inode_ptr;
     } else {
@@ -215,16 +215,21 @@ void cp(filesystem &filesystem_data, std::string &s1, std::string &s2) {
 
     // platne adresy na databloky
     source_addresses = usedDatablockByINode(filesystem_data, fs_file, source_inode, false);
+    std::cout << "COPYING";
     ino_t progress = 0;
     // prochazeni adres databloku
     for (auto &address : source_addresses) {
-        std::cout << progress << "/" << blocks_used << std::endl;
+        if(!progress%1024) {
+            std::cout << ".";
+        }
         int32_t obtained_address = addDatablockToINode(filesystem_data, fs_file, target_inode);
         copyDataBlock(filesystem_data, fs_file, address, obtained_address);
         progress++;
     }
+    std::cout << std::endl;
 
     fs_file.close();
+    std::cout << "OK" << std::endl;
 }
 
 

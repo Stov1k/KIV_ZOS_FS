@@ -62,7 +62,7 @@ void cat(filesystem &filesystem_data, std::string &s1) {
 
     // najdu odpovidajici inode
     pseudo_inode inode;
-    pseudo_inode *inode_ptr = getFileINode(filesystem_data, working_dir, segments.back());
+    pseudo_inode *inode_ptr = getFileINode(filesystem_data, working_dir, segments.back(), false);
     if (inode_ptr != nullptr) {
         inode = *inode_ptr;
 
