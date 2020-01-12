@@ -226,7 +226,6 @@ directory_item * getDirectoryItem(filesystem &filesystem_data, pseudo_inode &wor
     directory_item dir_name = createDirectoryItem(0, name);
     std::vector<directory_item> directories = getDirectories(filesystem_data, working_dir);
     for (auto &directory : directories) {
-        directory.item_name;
         if (strcmp(dir_name.item_name, directory.item_name) == 0) {
             dir_ptr = &directory;
             break;
@@ -234,7 +233,6 @@ directory_item * getDirectoryItem(filesystem &filesystem_data, pseudo_inode &wor
     }
     return dir_ptr;
 }
-
 
 /**
  * Vrati, zdali adresar tehoz jmena jiz existuje
@@ -255,10 +253,10 @@ bool isDirectoryExists(filesystem &filesystem_data, pseudo_inode &working_dir, s
  * Vrati nadrazeny adresar
  * @param filesystem_data filesystem
  * @param fs_file otevreny soubor filesystemu
- * @param inode adresar
+ * @param a1 adresar
  * @return nadrazeny adresar
  */
-pseudo_inode *getParrentDirectory(filesystem &filesystem_data, std::fstream &fs_file, pseudo_inode &inode) {
+pseudo_inode *getParrentDirectory(filesystem &filesystem_data, std::fstream &fs_file, pseudo_inode &a1) {
 
     uint32_t dirs_per_cluster = filesystem_data.super_block.cluster_size / sizeof(directory_item);
     directory_item directories[dirs_per_cluster];
@@ -266,8 +264,8 @@ pseudo_inode *getParrentDirectory(filesystem &filesystem_data, std::fstream &fs_
     pseudo_inode parrent;
     pseudo_inode *parrent_ptr = nullptr;
 
-    if (inode.direct1 != 0) {
-        fs_file.seekp(inode.direct1);
+    if (a1.direct1 != 0) {
+        fs_file.seekp(a1.direct1);
         fs_file.read(reinterpret_cast<char *>(&directories), sizeof(directories));
         fs_file.seekp(getINodePosition(filesystem_data, directories[1].inode));
         fs_file.read(reinterpret_cast<char *>(&parrent), sizeof(parrent));

@@ -11,6 +11,7 @@
 #include "directory.h"
 #include "inode.h"
 #include "datablock.h"
+#include "cd.h"
 
 /**
  * Vrati, zdali adresar je prazdny
@@ -221,37 +222,60 @@ void rmdir(filesystem &filesystem_data, std::string &a1) {
  * @param filesystem_data fileszystem
  * @param s1 nazev souboru
  */
-void rm(filesystem &filesystem_data, std::string &a1) {
+void rm(filesystem &filesystem_data, std::string &s1) {
+
+    // nalezeni nadrazeneho adresare
+    std::vector<std::string> s1_segments = splitPath(s1);
+    pseudo_inode a1_inode;
+    pseudo_inode *a1_inode_ptr = cd(filesystem_data, s1, false, false);
+    if(a1_inode_ptr != nullptr) {
+        a1_inode = *a1_inode_ptr;
+    } else {
+        std::cout << "FILE NOT FOUND" << std::endl;  // SOURCE DIRECTORY DOES NOT EXISTS
+        return;
+    }
+
+    // nalezeni souboru s1
+    pseudo_inode s1_inode;
+    pseudo_inode *s1_inode_ptr = iNodeByLocation(filesystem_data, s1, false);
+    if(s1_inode_ptr != nullptr) {
+        s1_inode = *s1_inode_ptr;
+        if(s1_inode.isDirectory) {
+            std::cout << "FILE IS DIRECTORY" << std::endl;
+            return;
+        }
+        if(s1_inode.nodeid == 0) {
+            std::cout << "INVALID FILE" << std::endl;
+            return;
+        }
+    } else {
+        std::cout << "FILE NOT FOUND" << std::endl;  // FILE FILE DOES NOT EXISTS
+        return;
+    }
+
+    // nalezeni zaznamu souboru s1 v adresari a1
+    directory_item s1_dir;
+    directory_item * s1_dir_ptr = nullptr;
+    s1_dir_ptr = getDirectoryItem(filesystem_data, a1_inode, s1_segments.back());
+    if(s1_dir_ptr != nullptr) {
+        s1_dir = *s1_dir_ptr;
+    } else {
+        std::cout << "FILE NOT FOUND" << std::endl;   // SOURCE DIRECTORY ITEM DOES NOT EXISTS
+        return;
+    }
+
     std::fstream fs_file;
     fs_file.open(filesystem_data.fs_file, std::ios::in | std::ios::out | std::ios::binary);
 
-    pseudo_inode *inode_ptr = nullptr;
-    pseudo_inode inode;
+    fs_file.seekp(getINodePosition(filesystem_data, s1_dir.inode));
+    fs_file.read(reinterpret_cast<char *>(&s1_inode), sizeof(pseudo_inode));
 
-    // zjistim, zdali existuje soubor stejneho nazvu
-    std::vector<directory_item> directories = getDirectories(filesystem_data, filesystem_data.current_dir);
-    for (auto &directory : directories) {
-        if (strcmp(a1.c_str(), directory.item_name) == 0) {
-            fs_file.seekp(
-                    filesystem_data.super_block.inode_start_address + (directory.inode - 1) * sizeof(pseudo_inode));
-            fs_file.read(reinterpret_cast<char *>(&inode), sizeof(pseudo_inode));
-            if (!inode.isDirectory) {
-                inode_ptr = &inode;
-            }
-            break;
-        }
-    }
-
-    if (inode_ptr != nullptr) {
-        inode = *inode_ptr;
-        removeLinkInParrentDir(filesystem_data, fs_file, inode, filesystem_data.current_dir);
-        removeDatablocksPositionInBitmap(filesystem_data, fs_file, inode);
-        removeINode(filesystem_data, fs_file, inode);
-        std::cout << "OK" << std::endl;
-
-    } else {
-        std::cout << "FILE NOT FOUND" << std::endl;
-    }
+    // smazani souboru s1
+    removeLinkInParrentDir(filesystem_data, fs_file, s1_inode, a1_inode);
+    removeDatablocksPositionInBitmap(filesystem_data, fs_file, s1_inode);
+    removeINode(filesystem_data, fs_file, s1_inode);
 
     fs_file.close();
+
+    std::cout << "OK" << std::endl;
 }

@@ -86,9 +86,9 @@ bool isDirectoryExists(filesystem &filesystem_data, pseudo_inode &working_dir, s
  * Vrati nadrazeny adresar
  * @param filesystem_data filesystem
  * @param fs_file otevreny soubor filesystemu
- * @param inode adresar
+ * @param a1 adresar
  * @return nadrazeny adresar
  */
-pseudo_inode *getParrentDirectory(filesystem &filesystem_data, std::fstream &fs_file, pseudo_inode &inode);
+pseudo_inode *getParrentDirectory(filesystem &filesystem_data, std::fstream &fs_file, pseudo_inode &a1);
 
 #endif //ZOSFS_DIRECTORY_H
