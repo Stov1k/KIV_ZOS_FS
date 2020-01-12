@@ -15,6 +15,13 @@
 int32_t linksPerCluster(filesystem &filesystem_data);
 
 /**
+ * Maximalni pocet databloku jednoho inodu
+ * @param filesystem_data filesystem
+ * @return max pocet databloku jednoho inodu
+ */
+int32_t maximumDatablocksPerINode(filesystem &filesystem_data);
+
+/**
  * Pocet dostupnych neobsazenych databloku na filesystemu
  * @param filesystem_data filesystem
  * @return pocet dostupnych neobsazenych databloku

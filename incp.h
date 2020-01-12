@@ -7,6 +7,6 @@
 
 #include "zosfsstruct.h"
 
-void inputCopy(filesystem &filesystem_data, std::string &input, std::string &location);
+void incp(filesystem &filesystem_data, std::string &input, std::string &location);
 
 #endif //ZOSFS_INCP_H

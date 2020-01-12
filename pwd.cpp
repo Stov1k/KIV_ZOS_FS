@@ -67,6 +67,8 @@ std::string getPathString(filesystem &filesystem_data, std::fstream &fs_file, st
  * @return cesta
  */
 std::string pwd(filesystem &filesystem_data, pseudo_inode &inode, bool verbose) {
+    std::string path = "";
+
     std::fstream fs_file;
     fs_file.open(filesystem_data.fs_file, std::ios::in | std::ios::out | std::ios::binary);
 
@@ -75,18 +77,26 @@ std::string pwd(filesystem &filesystem_data, pseudo_inode &inode, bool verbose) 
     pseudo_inode current = inode;
     pseudo_inode root = filesystem_data.root_dir;
 
-    s_path.push(current);
-    do {
-        current = *getParrentDirectory(filesystem_data, fs_file, current);
+    if (current.isDirectory) {
         s_path.push(current);
-    } while (current.nodeid != root.nodeid);
+        do {
+            current = *getParrentDirectory(filesystem_data, fs_file, current);
+            s_path.push(current);
+        } while (current.nodeid != root.nodeid);
 
-    if (verbose) {
-        std::string path = getPathString(filesystem_data, fs_file, s_path);
-        std::cout << path << '\n';
+        if (verbose) {
+            path = getPathString(filesystem_data, fs_file, s_path);
+            std::cout << path << '\n';
+        }
+    } else {
+        if (verbose) {
+            std::cout << "INODE " << inode.nodeid << " IS NOT DIRECTORY" << std::endl;
+        }
     }
 
     fs_file.close();
+
+    return path;
 }
 
 /**

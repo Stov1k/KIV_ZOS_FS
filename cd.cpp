@@ -29,6 +29,7 @@ pseudo_inode *cd(filesystem &filesystem_data, std::string &a1, bool verbose, boo
 
     // pracovni adresar nad nimz jsou provadeny zmeny
     pseudo_inode working_dir = filesystem_data.current_dir;
+    pseudo_inode * working_dir_ptr = &working_dir;
     // vynucene ukonceni cyklu pri neplatne ceste
     int force_break = 0;
     // prochazeni adresarema
@@ -49,6 +50,7 @@ pseudo_inode *cd(filesystem &filesystem_data, std::string &a1, bool verbose, boo
                 fs_file.read(reinterpret_cast<char *>(&dir_inode), sizeof(pseudo_inode));
                 if (dir_inode.isDirectory) {
                     working_dir = dir_inode;
+                    working_dir_ptr = &working_dir;
                     force_break = 0;        // OK
                 } else {
                     force_break = 2;        // FILE IS NOT DIRECTORY
@@ -78,8 +80,7 @@ pseudo_inode *cd(filesystem &filesystem_data, std::string &a1, bool verbose, boo
     // uzavreni souboru fs
     fs_file.close();
 
-    // reference na pracovni adresar
-    pseudo_inode * working_dir_ptr = &working_dir;
+    // vrati referenci na pracovni adresar
     return working_dir_ptr;
 }
 

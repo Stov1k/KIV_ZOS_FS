@@ -205,6 +205,123 @@ void formatFS(int size) {
 }
 
 /**
+ * Zpracovani prikazu
+ * @param cmd_string prikaz
+ * @return ukonceni aplikace?
+ */
+int32_t command(std::string cmd_string) {
+    std::istringstream iss(cmd_string);
+    std::vector<std::string> cmd(std::istream_iterator<std::string>{iss}, std::istream_iterator<std::string>());
+
+    if (cmd.size() > 0 && cmd[0] == "format") {
+        std::cout << cmd.size() << std::endl;
+        if (cmd.size() == 2) {
+            std::cout << "FORMAT..." << std::endl;
+            int fs_size = 0;
+            std::string str_size("");
+            for (int i = 0; i < cmd[1].length(); i++) {
+                if (isdigit(cmd[1].at(i))) {
+                    str_size.push_back(cmd[1].at(i));
+                } else {
+                    fs_size = std::stoi(str_size);
+                    if (cmd[1].at(i) == 'M') {
+                        fs_size = fs_size * 1048576;
+                        std::cout << "MB" << std::endl;
+                    } else if (cmd[1].at(i) == 'K') {
+                        fs_size = fs_size * 1024;
+                        std::cout << "KB" << std::endl;
+                    }
+                    break;
+                }
+            }
+            std::cout << fs_size << std::endl;
+            formatFS(fs_size);
+            openFS();
+        } else {
+            std::cout << "mkdir: wrong input" << std::endl;
+        }
+    } else if (cmd[0] == "open") {
+        std::cout << "OPEN..." << std::endl;
+        openFS();
+    } else if (cmd[0] == "bitmap") {
+        std::cout << "Bitmapa... " << std::endl;
+        print_bitmap();
+    } else if (cmd.size() > 0 && cmd[0] == "ls") {
+        int bitmap_size_bytes = (filesystem_data.super_block.inode_start_address -
+                                 filesystem_data.super_block.bitmap_start_address);
+        std::cout << "Obsah " << bitmap_size_bytes << std::endl;
+        ls(filesystem_data, filesystem_data.current_dir);
+    } else if (cmd.size() > 0 && cmd[0] == "pwd") {
+        pwd(filesystem_data);
+    } else if (cmd.size() > 0 && cmd[0] == "mkdir") {
+        if (cmd.size() == 1) {
+            std::cout << "mkdir: missing operand" << std::endl;
+        } else {
+            mkdir(filesystem_data, cmd[1]);
+        }
+    } else if (cmd.size() > 0 && cmd[0] == "rmdir") {
+        if (cmd.size() == 1) {
+            std::cout << "rmdir: missing operand" << std::endl;
+        } else {
+            rmdir(filesystem_data, cmd[1]);
+        }
+    } else if (cmd.size() > 0 && cmd[0] == "rm") {
+        if (cmd.size() == 1) {
+            std::cout << "rm: missing operand" << std::endl;
+        } else {
+            rm(filesystem_data, cmd[1]);
+        }
+    } else if (cmd.size() > 0 && cmd[0] == "info") {
+        if (cmd.size() == 1) {
+            std::cout << "info: missing operand" << std::endl;
+        } else {
+            info(filesystem_data, cmd[1]);
+        }
+    } else if (cmd.size() > 0 && cmd[0] == "incp") {
+        if (cmd.size() < 3) {
+            std::cout << "incp: missing operand" << std::endl;
+        } else {
+            incp(filesystem_data, cmd[1], cmd[2]);
+        }
+    } else if (cmd.size() > 0 && cmd[0] == "outcp") {
+        if (cmd.size() < 3) {
+            std::cout << "outcp: missing operand" << std::endl;
+        } else {
+            outcp(filesystem_data, cmd[1], cmd[2]);
+        }
+    } else if (cmd.size() > 0 && cmd[0] == "mv") {
+        if (cmd.size() < 3) {
+            std::cout << "mv: missing operand" << std::endl;
+        } else {
+            mv(filesystem_data, cmd[1], cmd[2]);
+        }
+    } else if (cmd.size() > 0 && cmd[0] == "cp") {
+        if (cmd.size() < 3) {
+            std::cout << "cp: missing operand" << std::endl;
+        } else {
+            cp(filesystem_data, cmd[1], cmd[2]);
+        }
+    } else if (cmd.size() > 0 && cmd[0] == "cd") {
+        if (cmd.size() == 1) {
+            filesystem_data.current_dir = filesystem_data.root_dir;
+            std::cout << "OK" << std::endl;
+        } else {
+            cd(filesystem_data, cmd[1]);
+        }
+    } else if (cmd.size() > 0 && cmd[0] == "cat") {
+        if(cmd.size() == 1) {
+            std::cout << "cat: missing operand" << std::endl;
+        } else {
+            cat(filesystem_data, cmd[1]);
+        }
+    } else if (cmd[0] == "q") {
+        std::cout << "QUIT" << std::endl;
+        return 1;
+    };
+    return 0;
+}
+
+/**
  * Hlavni
  * @param argc
  * @param argv
@@ -242,112 +359,12 @@ int main(int argc, char **argv) {
     // Smycka prikazu
     while (true) {
         std::cout << "> ";
-        std::string input_string;
-        std::getline(std::cin, input_string);  // nacte cely radek
+        std::string cmd_string;
+        std::getline(std::cin, cmd_string);  // nacte cely radek
 
-        std::istringstream iss(input_string);
-        std::vector<std::string> cmd(std::istream_iterator<std::string>{iss}, std::istream_iterator<std::string>());
-
-        if (cmd.size() > 0 && cmd[0] == "format") {
-            std::cout << cmd.size() << std::endl;
-            if (cmd.size() == 2) {
-                std::cout << "FORMAT..." << std::endl;
-                int fs_size = 0;
-                std::string str_size("");
-                for (int i = 0; i < cmd[1].length(); i++) {
-                    if (isdigit(cmd[1].at(i))) {
-                        str_size.push_back(cmd[1].at(i));
-                    } else {
-                        fs_size = std::stoi(str_size);
-                        if (cmd[1].at(i) == 'M') {
-                            fs_size = fs_size * 1048576;
-                            std::cout << "MB" << std::endl;
-                        } else if (cmd[1].at(i) == 'K') {
-                            fs_size = fs_size * 1024;
-                            std::cout << "KB" << std::endl;
-                        }
-                        break;
-                    }
-                }
-                std::cout << fs_size << std::endl;
-                formatFS(fs_size);
-                openFS();
-            }
-        } else if (input_string == "open") {
-            std::cout << "OPEN..." << std::endl;
-            openFS();
-        } else if (input_string == "bitmap") {
-            std::cout << "Bitmapa... " << std::endl;
-            print_bitmap();
-        } else if (cmd.size() > 0 && cmd[0] == "ls") {
-            int bitmap_size_bytes = (filesystem_data.super_block.inode_start_address -
-                                     filesystem_data.super_block.bitmap_start_address);
-            std::cout << "Obsah " << bitmap_size_bytes << std::endl;
-            ls(filesystem_data, filesystem_data.current_dir);
-        } else if (cmd.size() > 0 && cmd[0] == "pwd") {
-            pwd(filesystem_data);
-        } else if (cmd.size() > 0 && cmd[0] == "mkdir") {
-            if (cmd.size() == 1) {
-                std::cout << "mkdir: missing operand" << std::endl;
-            } else {
-                mkdir(filesystem_data, cmd[1]);
-            }
-        } else if (cmd.size() > 0 && cmd[0] == "rmdir") {
-            if (cmd.size() == 1) {
-                std::cout << "rmdir: missing operand" << std::endl;
-            } else {
-                rmdir(filesystem_data, cmd[1]);
-            }
-        } else if (cmd.size() > 0 && cmd[0] == "rm") {
-            if (cmd.size() == 1) {
-                std::cout << "rm: missing operand" << std::endl;
-            } else {
-                rm(filesystem_data, cmd[1]);
-            }
-        } else if (cmd.size() > 0 && cmd[0] == "info") {
-            if (cmd.size() == 1) {
-                std::cout << "info: missing operand" << std::endl;
-            } else {
-                info(filesystem_data, cmd[1]);
-            }
-        } else if (cmd.size() > 0 && cmd[0] == "incp") {
-            if (cmd.size() < 3) {
-                std::cout << "PATH NOT FOUND" << std::endl;
-            } else {
-                inputCopy(filesystem_data, cmd[1], cmd[1]); // TODO: upravit pak parametry :)
-            }
-        } else if (cmd.size() > 0 && cmd[0] == "outcp") {
-            if (cmd.size() < 3) {
-                std::cout << "PATH NOT FOUND" << std::endl;
-            } else {
-                outcp(filesystem_data, cmd[1], cmd[2]);
-            }
-        } else if (cmd.size() > 0 && cmd[0] == "mv") {
-            if (cmd.size() < 3) {
-                std::cout << "PATH NOT FOUND" << std::endl;
-            } else {
-                mv(filesystem_data, cmd[1], cmd[2]);
-            }
-        } else if (cmd.size() > 0 && cmd[0] == "cp") {
-            if (cmd.size() < 3) {
-                std::cout << "PATH NOT FOUND" << std::endl;
-            } else {
-                cp(filesystem_data, cmd[1], cmd[2]);
-            }
-        } else if (cmd.size() > 0 && cmd[0] == "cd") {
-            if (cmd.size() == 1) {
-                filesystem_data.current_dir = filesystem_data.root_dir;
-                std::cout << "OK" << std::endl;
-            } else {
-                cd(filesystem_data, cmd[1]);
-            }
-        } else if (cmd.size() > 1 && cmd[0] == "cat") {
-            cat(filesystem_data, cmd[1]);
-        } else if (input_string == "q") {
-            std::cout << "Konec" << std::endl;
+        if(command(cmd_string)) {
             return 0;
-        };
+        }
     }
 
-    return 0;
 }

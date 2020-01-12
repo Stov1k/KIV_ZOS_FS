@@ -8,47 +8,13 @@
 #include <bitset>
 #include <iostream>
 #include <cstring>
+#include <cmath>
 #include "incp.h"
 #include "zosfsstruct.h"
 #include "inode.h"
 #include "directory.h"
 #include "datablock.h"
-
-/**
- * Spocte pocet volnych databloku z bitmapy
- * @param filesystem_data filesystem
- * @return pocet volnych databloku
- */
-long countFreeDatablock(filesystem &filesystem_data) {
-    std::fstream input_file;
-    input_file.open(filesystem_data.fs_file, std::ios::in);
-
-    input_file.seekp(filesystem_data.super_block.bitmap_start_address);
-
-    int bitmap_size_bytes = (filesystem_data.super_block.inode_start_address -
-                             filesystem_data.super_block.bitmap_start_address);
-    long found = 0;
-
-    for (int i = 0; i < bitmap_size_bytes; i++) {
-        char b;
-        input_file.read(&b, 1);
-
-        // bitova mnozina reprezentujici 8 databloku
-        std::bitset<8> x(b);
-
-        // vyhledani nuloveho bitu
-        for (int i = 0; i < 8; i++) {
-            bool used = x.test(i);
-            if (!used) {
-                found = found + 1;
-            }
-        }
-    }
-
-    input_file.close();
-
-    return found;
-}
+#include "cd.h"
 
 /**
  * Vrati velikost souboru mimo FS
@@ -101,27 +67,47 @@ int32_t writeDatablock(filesystem &filesystem_data, int32_t *datablock, std::ifs
  * @param input vstupni soubor
  * @param location umisteni na FS
  */
-void inputCopy(filesystem &filesystem_data, std::string &input, std::string &location) {
+void incp(filesystem &filesystem_data, std::string &input, std::string &location) {
+
+    // cesta rozdelena na adresare
+    std::vector<std::string> to_segments = splitPath(location);
+
+    pseudo_inode *to_dir_ptr = cd(filesystem_data, location, false, false);
+    pseudo_inode to_dir = filesystem_data.current_dir;
+    if(to_dir_ptr != nullptr) {
+        to_dir = *to_dir_ptr;
+    } else {
+        std::cout << "DESTINATION DIRECTORY DOES NOT EXISTS!" << std::endl;
+        return;
+    }
 
     // zjisti, zdali jiz soubor stejneho nazvu existuje
-    if (isDirectoryExists(filesystem_data, filesystem_data.current_dir, location)) {     // TODO: location pak predelat (bude moc byt uvadena cesta)
+    if (isDirectoryExists(filesystem_data, to_dir, to_segments.back())) {
         std::cout << "EXIST" << std::endl;
         return;
     }
-    directory_item dir = createDirectoryItem(0, location); // TODO: location pak predelat (bude moc byt uvadena cesta)
+    directory_item dir = createDirectoryItem(0,  to_segments.back());
 
     // spocte velikost input
     long filesize = getFilesize(input);
 
     // potreba volnych datablocku
     int32_t links_per_cluster = linksPerCluster(filesystem_data);
-    //double datablock_needed = (double) (filesize) / (double) (filesystem_data.super_block.cluster_size);  // TODO: Udelat vypocet potreby databloku
-
-    // zjisti dostupnou velikost // TODO: predelat podle volnych datablocku?
-    long free_space = countFreeDatablock(filesystem_data);
-    free_space = free_space * filesystem_data.super_block.cluster_size;
-    if (free_space < filesize) {
+    int32_t available_datablocks = availableDatablocks(filesystem_data);
+    int32_t maximum_datablocks = maximumDatablocksPerINode(filesystem_data);
+    int32_t datablock_needed = ceil((double) (filesize) / (double) (filesystem_data.super_block.cluster_size));
+    if(datablock_needed > 5) {
+        datablock_needed += ceil((double)datablock_needed/(double)links_per_cluster)+1;
+        std::cout << "DATABLOCK NEEDED: " << datablock_needed << std::endl;
+    }
+    if(datablock_needed > available_datablocks) {
+        int32_t free_space = available_datablocks * filesystem_data.super_block.cluster_size;
         std::cout << "NOT ENOUGH SPACE (FREE: " << free_space << " REQUIRED: " << filesize << ")" << std::endl;
+        return;
+    }
+    if(datablock_needed > maximum_datablocks) {
+        int32_t max_file = maximum_datablocks * filesystem_data.super_block.cluster_size;
+        std::cout << "FILE IS TOO LARGE (MAXIMUM: " << max_file << " REQUIRED: " << filesize << ")" << std::endl;
         return;
     }
 
@@ -138,7 +124,7 @@ void inputCopy(filesystem &filesystem_data, std::string &input, std::string &loc
     // vytvor adresar
     std::fstream fs_file;
     fs_file.open(filesystem_data.fs_file, std::ios::in | std::ios::out | std::ios::binary);
-    fs_file.seekp(filesystem_data.current_dir.direct1);
+    fs_file.seekp(to_dir.direct1);
     uint32_t dirs_per_cluster = filesystem_data.super_block.cluster_size / sizeof(directory_item);
     directory_item dirs[dirs_per_cluster];
     fs_file.read(reinterpret_cast<char *>(&dirs), sizeof(dirs));
@@ -251,7 +237,7 @@ void inputCopy(filesystem &filesystem_data, std::string &input, std::string &loc
     inode.file_size = filesize;     // puvodni velikost souboru, nutne pro export
 
     // aktualizace podslozek v nadrazenem adresari
-    fs_file.seekp(filesystem_data.current_dir.direct1); // skoci na data
+    fs_file.seekp(to_dir.direct1); // skoci na data
     fs_file.write(reinterpret_cast<const char *>(&dirs), sizeof(dirs));
 
     // zapis inode

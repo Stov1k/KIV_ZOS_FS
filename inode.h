@@ -29,4 +29,12 @@ pseudo_inode *getFreeINode(filesystem &filesystem_data);
  */
 pseudo_inode *getFileINode(filesystem &filesystem_data, pseudo_inode &working_dir, std::string &s1);
 
+/**
+ * Vrati referenci na inode adresare nebo souboru
+ * @param filesystem_data filesystem
+ * @param location lokace / nazev souboru
+ * @param verbose vypisovani zprav
+ */
+pseudo_inode *iNodeByLocation(filesystem &filesystem_data, std::string &location, bool verbose);
+
 #endif //ZOSFS_INODE_H

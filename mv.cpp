@@ -215,10 +215,13 @@ void cp(filesystem &filesystem_data, std::string &s1, std::string &s2) {
 
     // platne adresy na databloky
     source_addresses = usedDatablockByINode(filesystem_data, fs_file, source_inode, false);
+    ino_t progress = 0;
     // prochazeni adres databloku
     for (auto &address : source_addresses) {
+        std::cout << progress << "/" << blocks_used << std::endl;
         int32_t obtained_address = addDatablockToINode(filesystem_data, fs_file, target_inode);
         copyDataBlock(filesystem_data, fs_file, address, obtained_address);
+        progress++;
     }
 
     fs_file.close();

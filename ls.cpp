@@ -29,7 +29,7 @@ void ls(filesystem &filesystem_data, pseudo_inode &a1) {
     directory_item directories[dirs_per_cluster];
 
     // vypise hlavicku
-    std::cout << "#" << "\t" << "ND" << "\t" << "NAME" << "\t" << "SIZE" << std::endl;
+    std::cout << "NAME" << "\t" << "ND" << "\t" << "SIZE" << "\t" << std::endl;
 
     // prochazeni adres databloku
     for (auto &address : addresses) {
@@ -40,8 +40,13 @@ void ls(filesystem &filesystem_data, pseudo_inode &a1) {
                 pseudo_inode inode;
                 fs_file.seekp(getINodePosition(filesystem_data, directories[i].inode));
                 fs_file.read(reinterpret_cast<char *>(&inode), sizeof(pseudo_inode));
-                std::cout << i << "\t" << directories[i].inode << "\t" << directories[i].item_name << "\t"
-                          << inode.file_size << std::endl;
+                if(inode.isDirectory) {
+                    std::cout << " + ";
+                } else {
+                    std::cout << " - ";
+                }
+                std::cout << directories[i].item_name << "\t"
+                          << directories[i].inode << "\t" << inode.file_size << std::endl;
             }
         }
     }

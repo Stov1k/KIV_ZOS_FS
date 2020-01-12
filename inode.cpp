@@ -88,3 +88,64 @@ pseudo_inode *getFileINode(filesystem &filesystem_data, pseudo_inode &working_di
     input_file.close();
     return inode_ptr;
 }
+
+/**
+ * Vrati referenci na inode adresare nebo souboru
+ * @param filesystem_data filesystem
+ * @param location lokace / nazev souboru
+ * @param verbose vypisovani zprav
+ */
+pseudo_inode *iNodeByLocation(filesystem &filesystem_data, std::string &location, bool verbose) {
+    // cesta rozdelena na adresare
+    std::vector<std::string> segments = splitPath(location);
+    // otevreni souboru fs
+    std::fstream fs_file;
+    fs_file.open(filesystem_data.fs_file, std::ios::in | std::ios::out | std::ios::binary);
+
+    // pracovni adresar nad nimz jsou provadeny zmeny
+    pseudo_inode working_dir = filesystem_data.current_dir;
+    pseudo_inode * working_dir_ptr = &working_dir;
+    // vynucene ukonceni cyklu pri neplatne ceste
+    int force_break = 0;
+    // prochazeni adresarema
+    for (int i = 0; i < segments.size(); i++) {
+        if (i == 0 && segments[i].length() == 0) {   // zadana absolutni cesta
+            working_dir = filesystem_data.root_dir;
+            continue;
+        } else if (i != 0 && segments[i].length() == 0) {    // ignorovani nasobnych lomitek
+            continue;
+        }
+        // zjistim, zdali existuje adresar stejneho nazvu
+        std::vector<directory_item> directories = getDirectories(filesystem_data, working_dir);
+        for (auto &directory : directories) {
+            force_break = 1;    // PATH NOT FOUND (v pripade nalezeni se prepise na 0 nebo 2)
+            if (strcmp(segments[i].c_str(), directory.item_name) == 0) {
+                fs_file.seekp(getINodePosition(filesystem_data, directory.inode));
+                pseudo_inode dir_inode;
+                fs_file.read(reinterpret_cast<char *>(&dir_inode), sizeof(pseudo_inode));
+                working_dir = dir_inode;
+                force_break = 0;        // OK
+                break;
+            }
+        }
+        if (force_break) {
+            break;
+        }
+    }
+    // vypsani zpravy
+    if (verbose) {
+        if (force_break) {
+            std::cout << "PATH NOT FOUND" << std::endl;
+        } else {
+            std::cout << "OK" << std::endl;
+        }
+    }
+    // uzavreni souboru fs
+    fs_file.close();
+
+    // vrati referenci na pracovni adresar / soubor
+    if(force_break) {
+        working_dir_ptr = nullptr;
+    }
+    return working_dir_ptr;
+}
