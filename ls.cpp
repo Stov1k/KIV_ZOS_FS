@@ -40,7 +40,7 @@ void ls(filesystem &filesystem_data, pseudo_inode &a1) {
                 pseudo_inode inode;
                 fs_file.seekp(getINodePosition(filesystem_data, directories[i].inode));
                 fs_file.read(reinterpret_cast<char *>(&inode), sizeof(pseudo_inode));
-                if(inode.isDirectory) {
+                if (inode.isDirectory) {
                     std::cout << " + ";
                 } else {
                     std::cout << " - ";

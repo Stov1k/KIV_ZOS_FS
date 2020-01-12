@@ -27,7 +27,7 @@ int32_t linksPerCluster(filesystem &filesystem_data) {
  */
 int32_t maximumDatablocksPerINode(filesystem &filesystem_data) {
     int32_t links_per_cluster = linksPerCluster(filesystem_data);
-    return 5 + links_per_cluster + links_per_cluster*links_per_cluster;
+    return 5 + links_per_cluster + links_per_cluster * links_per_cluster;
 }
 
 /**
@@ -158,7 +158,8 @@ int32_t createIndirectDatablock(filesystem &filesystem_data, std::fstream &fs_fi
  * @param structural_included vcetne strukturnich inodu (neprime odkazy)
  * @return vector adres databloku
  */
-std::vector<int32_t> usedDatablockByINode(filesystem &filesystem_data, std::fstream &fs_file, pseudo_inode &inode, bool structural_included) {
+std::vector<int32_t> usedDatablockByINode(filesystem &filesystem_data, std::fstream &fs_file, pseudo_inode &inode,
+                                          bool structural_included) {
     std::vector<int32_t> addresses;
     if (inode.direct1) addresses.push_back(inode.direct1);
     if (inode.direct2) addresses.push_back(inode.direct2);
@@ -169,7 +170,7 @@ std::vector<int32_t> usedDatablockByINode(filesystem &filesystem_data, std::fstr
         int32_t links_per_cluster = linksPerCluster(filesystem_data);
         int32_t links[links_per_cluster];
         if (inode.indirect1) {
-            if(structural_included) addresses.push_back(inode.indirect1);
+            if (structural_included) addresses.push_back(inode.indirect1);
             fs_file.seekp(inode.indirect1);
             fs_file.read(reinterpret_cast<char *>(&links), sizeof(links));
             for (int i = 0; i < links_per_cluster; i++) {
@@ -179,13 +180,13 @@ std::vector<int32_t> usedDatablockByINode(filesystem &filesystem_data, std::fstr
             }
         }
         if (inode.indirect2) {
-            if(structural_included) addresses.push_back(inode.indirect2);
+            if (structural_included) addresses.push_back(inode.indirect2);
             int32_t sublinks[links_per_cluster];
             fs_file.seekp(inode.indirect2);
             fs_file.read(reinterpret_cast<char *>(&links), sizeof(links));
             for (int i = 0; i < links_per_cluster; i++) {
                 if (links[i]) {
-                    if(structural_included) addresses.push_back(links[i]);
+                    if (structural_included) addresses.push_back(links[i]);
                     fs_file.seekp(links[i]);
                     fs_file.read(reinterpret_cast<char *>(&sublinks), sizeof(sublinks));
                     for (int j = 0; j < links_per_cluster; j++) {
@@ -209,7 +210,7 @@ int32_t castDatablock(filesystem &filesystem_data, std::fstream &fs_file) {
     int32_t datablock_position = 0;
     int32_t datablock[4];
     bool isFree = getFreeDatablock(filesystem_data, datablock);
-    if(isFree) {
+    if (isFree) {
         // pozice
         datablock_position = filesystem_data.super_block.data_start_address +
                              (datablock[0] * filesystem_data.super_block.cluster_size);
@@ -230,7 +231,7 @@ int32_t castDatablock(filesystem &filesystem_data, std::fstream &fs_file) {
  */
 int32_t addDatablockToINode(filesystem &filesystem_data, std::fstream &fs_file, pseudo_inode &inode) {
     // musi se jednat o existujici inode
-    if(inode.nodeid == 0) {
+    if (inode.nodeid == 0) {
         return 0;
     }
     // dostupne zdroje
@@ -244,10 +245,10 @@ int32_t addDatablockToINode(filesystem &filesystem_data, std::fstream &fs_file, 
     for (auto &address : addresses) {
         used_datablocks_by_inode++;
     }
-    int32_t avaible_datablocks_by_inode = maximum_datablocks_per_inode-used_datablocks_by_inode;
-    int32_t avaible = std::max(avaible_datablocks,avaible_datablocks_by_inode);
+    int32_t avaible_datablocks_by_inode = maximum_datablocks_per_inode - used_datablocks_by_inode;
+    int32_t avaible = std::max(avaible_datablocks, avaible_datablocks_by_inode);
 
-    if(avaible) {
+    if (avaible) {
         if (!inode.direct1) {
             inode.direct1 = castDatablock(filesystem_data, fs_file);
             datablock_position = inode.direct1;
@@ -265,10 +266,10 @@ int32_t addDatablockToINode(filesystem &filesystem_data, std::fstream &fs_file, 
             datablock_position = inode.direct5;
         } else if (!inode.indirect1) {
             inode.indirect1 = createIndirectDatablock(filesystem_data, fs_file);
-            avaible = avaible-1;
+            avaible = avaible - 1;
         }
         // indirect 1
-        if(!datablock_position && avaible) {
+        if (!datablock_position && avaible) {
             int32_t links_per_cluster = linksPerCluster(filesystem_data);
             int32_t links[links_per_cluster];
             fs_file.seekp(inode.indirect1);
@@ -284,44 +285,46 @@ int32_t addDatablockToINode(filesystem &filesystem_data, std::fstream &fs_file, 
                 }
             }
             // indirect 2
-            if(!datablock_position && avaible) {
+            if (!datablock_position && avaible) {
                 int32_t sublinks[links_per_cluster];
                 if (!inode.indirect2) {
                     inode.indirect2 = createIndirectDatablock(filesystem_data, fs_file);
                     avaible = avaible - 1;
                 }
-                if(avaible) {
+                if (avaible) {
                     fs_file.seekp(inode.indirect2);
                     fs_file.read(reinterpret_cast<char *>(&links), sizeof(links));
                     for (int i = 0; i < links_per_cluster; i++) {
-                        if(!links[i]) {
+                        if (!links[i]) {
                             links[i] = createIndirectDatablock(filesystem_data, fs_file);
                             avaible = avaible - 1;
                             fs_file.seekp(links[i]);
                             fs_file.read(reinterpret_cast<char *>(&sublinks), sizeof(sublinks));
-                            if(avaible) {
+                            if (avaible) {
                                 sublinks[0] = castDatablock(filesystem_data, fs_file);
                                 datablock_position = sublinks[0];
                                 // aktualizace odkazu
                                 fs_file.seekp(inode.indirect2);
-                                fs_file.write(reinterpret_cast<const char *>(&links), filesystem_data.super_block.cluster_size);
+                                fs_file.write(reinterpret_cast<const char *>(&links),
+                                              filesystem_data.super_block.cluster_size);
                             }
                         }
                         if (links[i]) {
                             fs_file.seekp(links[i]);
                             fs_file.read(reinterpret_cast<char *>(&sublinks), sizeof(sublinks));
                             for (int j = 0; j < links_per_cluster; j++) {
-                                if(!sublinks[j]) {
+                                if (!sublinks[j]) {
                                     sublinks[j] = castDatablock(filesystem_data, fs_file);
                                     datablock_position = sublinks[j];
                                     // aktualizace odkazu
                                     fs_file.seekp(links[i]);
-                                    fs_file.write(reinterpret_cast<const char *>(&sublinks), filesystem_data.super_block.cluster_size);
+                                    fs_file.write(reinterpret_cast<const char *>(&sublinks),
+                                                  filesystem_data.super_block.cluster_size);
                                     break;
                                 }
                             }
                         }
-                        if(datablock_position || !avaible) break;
+                        if (datablock_position || !avaible) break;
                     }
                 }
             }

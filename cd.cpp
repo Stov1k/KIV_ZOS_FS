@@ -29,7 +29,7 @@ pseudo_inode *cd(filesystem &filesystem_data, std::string &a1, bool verbose, boo
 
     // pracovni adresar nad nimz jsou provadeny zmeny
     pseudo_inode working_dir = filesystem_data.current_dir;
-    pseudo_inode * working_dir_ptr = &working_dir;
+    pseudo_inode *working_dir_ptr = &working_dir;
     // vynucene ukonceni cyklu pri neplatne ceste
     int force_break = 0;
     // prochazeni adresarema
@@ -44,7 +44,7 @@ pseudo_inode *cd(filesystem &filesystem_data, std::string &a1, bool verbose, boo
         std::vector<directory_item> directories = getDirectories(filesystem_data, working_dir);
         for (auto &directory : directories) {
             force_break = 1;    // PATH NOT FOUND (v pripade nalezeni se prepise na 0 nebo 2)
-            if(i < segments.size() -1) {
+            if (i < segments.size() - 1) {
                 working_dir_ptr = nullptr;
             }
             if (strcmp(segments[i].c_str(), directory.item_name) == 0) {
@@ -94,10 +94,10 @@ pseudo_inode *cd(filesystem &filesystem_data, std::string &a1, bool verbose, boo
  */
 void cd(filesystem &filesystem_data, std::string &a1) {
     pseudo_inode working_dir;
-    pseudo_inode * working_dir_ptr = iNodeByLocation(filesystem_data, a1, false);
-    if(nullptr != working_dir_ptr) {
+    pseudo_inode *working_dir_ptr = iNodeByLocation(filesystem_data, a1, false);
+    if (nullptr != working_dir_ptr) {
         working_dir = *working_dir_ptr;
-        if(working_dir.isDirectory) {
+        if (working_dir.isDirectory) {
             filesystem_data.current_dir = working_dir;
             std::cout << "OK" << std::endl;
             return;

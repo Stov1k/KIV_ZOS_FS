@@ -150,13 +150,13 @@ void rmdir(filesystem &filesystem_data, std::string &a1) {
     // nalezeni adresare a1
     pseudo_inode a1_inode;
     pseudo_inode *a1_inode_ptr = iNodeByLocation(filesystem_data, a1, false);
-    if(a1_inode_ptr != nullptr) {
+    if (a1_inode_ptr != nullptr) {
         a1_inode = *a1_inode_ptr;
-        if(!a1_inode.isDirectory) {
+        if (!a1_inode.isDirectory) {
             std::cout << "FILE IS NOT DIRECTORY" << std::endl;
             return;
         }
-        if(a1_inode.nodeid == 0) {
+        if (a1_inode.nodeid == 0) {
             std::cout << "INVALID FILE" << std::endl;
             return;
         }
@@ -202,7 +202,7 @@ void rm(filesystem &filesystem_data, std::string &s1) {
     std::vector<std::string> s1_segments = splitPath(s1);
     pseudo_inode a1_inode;
     pseudo_inode *a1_inode_ptr = cd(filesystem_data, s1, false, false);
-    if(a1_inode_ptr != nullptr) {
+    if (a1_inode_ptr != nullptr) {
         a1_inode = *a1_inode_ptr;
     } else {
         std::cout << "FILE NOT FOUND" << std::endl;  // SOURCE DIRECTORY DOES NOT EXISTS
@@ -212,13 +212,13 @@ void rm(filesystem &filesystem_data, std::string &s1) {
     // nalezeni souboru s1
     pseudo_inode s1_inode;
     pseudo_inode *s1_inode_ptr = iNodeByLocation(filesystem_data, s1, false);
-    if(s1_inode_ptr != nullptr) {
+    if (s1_inode_ptr != nullptr) {
         s1_inode = *s1_inode_ptr;
-        if(s1_inode.isDirectory) {
+        if (s1_inode.isDirectory) {
             std::cout << "FILE IS DIRECTORY" << std::endl;
             return;
         }
-        if(s1_inode.nodeid == 0) {
+        if (s1_inode.nodeid == 0) {
             std::cout << "INVALID FILE" << std::endl;
             return;
         }
@@ -229,9 +229,9 @@ void rm(filesystem &filesystem_data, std::string &s1) {
 
     // nalezeni zaznamu souboru s1 v adresari a1
     directory_item s1_dir;
-    directory_item * s1_dir_ptr = nullptr;
+    directory_item *s1_dir_ptr = nullptr;
     s1_dir_ptr = getDirectoryItem(filesystem_data, a1_inode, s1_segments.back());
-    if(s1_dir_ptr != nullptr) {
+    if (s1_dir_ptr != nullptr) {
         s1_dir = *s1_dir_ptr;
     } else {
         std::cout << "FILE NOT FOUND" << std::endl;   // SOURCE DIRECTORY ITEM DOES NOT EXISTS

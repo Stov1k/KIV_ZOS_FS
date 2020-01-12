@@ -48,7 +48,7 @@ void cp(filesystem &filesystem_data, std::string &s1, std::string &s2) {
     // pracovni adresare
     pseudo_inode *from_dir_ptr = cd(filesystem_data, s1, false, false);
     pseudo_inode from_dir = filesystem_data.current_dir;
-    if(from_dir_ptr != nullptr) {
+    if (from_dir_ptr != nullptr) {
         from_dir = *from_dir_ptr;
     } else {
         std::cout << "FILE NOT FOUND" << std::endl;  // SOURCE DIRECTORY DOES NOT EXISTS
@@ -57,7 +57,7 @@ void cp(filesystem &filesystem_data, std::string &s1, std::string &s2) {
 
     pseudo_inode *to_dir_ptr = cd(filesystem_data, s2, false, false);
     pseudo_inode to_dir = filesystem_data.current_dir;
-    if(to_dir_ptr != nullptr) {
+    if (to_dir_ptr != nullptr) {
         to_dir = *to_dir_ptr;
     } else {
         std::cout << "PATH NOT FOUND" << std::endl; // DESTINATION DIRECTORY DOES NOT EXISTS
@@ -83,7 +83,7 @@ void cp(filesystem &filesystem_data, std::string &s1, std::string &s2) {
     // dostupnych volnych databloku
     int32_t blocks_available = availableDatablocks(filesystem_data);
 
-    if(blocks_available < blocks_used) {
+    if (blocks_available < blocks_used) {
         std::cout << "NOT ENOUGH SPACE" << std::endl;
         return;
     }
@@ -111,7 +111,7 @@ void cp(filesystem &filesystem_data, std::string &s1, std::string &s2) {
     ino_t progress = 0;
     // prochazeni adres databloku
     for (auto &address : source_addresses) {
-        if(!progress%1024) {
+        if (!progress % 1024) {
             std::cout << ".";
         }
         int32_t obtained_address = addDatablockToINode(filesystem_data, fs_file, target_inode);

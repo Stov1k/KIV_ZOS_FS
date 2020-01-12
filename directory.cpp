@@ -91,7 +91,7 @@ std::vector<directory_item> getDirectories(filesystem &filesystem_data, pseudo_i
  */
 int32_t removeDirectoryItemEntry(filesystem &filesystem_data, pseudo_inode &working_dir, directory_item &directory) {
     // musi se jednat o existujici inode
-    if(working_dir.nodeid == 0) {
+    if (working_dir.nodeid == 0) {
         return 0;
     }
 
@@ -115,7 +115,7 @@ int32_t removeDirectoryItemEntry(filesystem &filesystem_data, pseudo_inode &work
         fs_file.read(reinterpret_cast<char *>(&directories), sizeof(directories));
         for (int i = 0; i < dirs_per_cluster; i++) {
             if (directories[i].inode == directory.inode) {
-                if(strcmp(directories[i].item_name,directory.item_name) == 0) {
+                if (strcmp(directories[i].item_name, directory.item_name) == 0) {
                     record_address = address;
                     directories[i].inode = 0;
                     std::strncpy(directories[i].item_name, "\0", sizeof(directories[i].item_name));
@@ -125,7 +125,7 @@ int32_t removeDirectoryItemEntry(filesystem &filesystem_data, pseudo_inode &work
         }
     }
 
-    if(record_address) {
+    if (record_address) {
         fs_file.seekp(record_address);
         fs_file.write(reinterpret_cast<const char *>(&directories), sizeof(directories));
     }
@@ -143,7 +143,7 @@ int32_t removeDirectoryItemEntry(filesystem &filesystem_data, pseudo_inode &work
  */
 int32_t addDirectoryItemEntry(filesystem &filesystem_data, pseudo_inode &working_dir, directory_item &directory) {
     // musi se jednat o existujici inode
-    if(working_dir.nodeid == 0) {
+    if (working_dir.nodeid == 0) {
         return 0;
     }
 
@@ -171,15 +171,15 @@ int32_t addDirectoryItemEntry(filesystem &filesystem_data, pseudo_inode &working
                 std::strncpy(directories[i].item_name, directory.item_name, sizeof(directories[i].item_name));
                 record_address = address;
             }
-            if(record_address) break;
+            if (record_address) break;
         }
-        if(record_address) break;
+        if (record_address) break;
     }
 
     // pokusi se obdrzet novy datablok
-    if(!record_address) {
-        int32_t obtained_address = addDatablockToINode(filesystem_data,fs_file,working_dir);
-        if(obtained_address) {
+    if (!record_address) {
+        int32_t obtained_address = addDatablockToINode(filesystem_data, fs_file, working_dir);
+        if (obtained_address) {
             for (int i = 0; i < dirs_per_cluster; i++) {
                 directories[i] = directory_item{};
                 directories[i].inode = 0;
@@ -190,7 +190,7 @@ int32_t addDirectoryItemEntry(filesystem &filesystem_data, pseudo_inode &working
         }
     }
 
-    if(record_address) {
+    if (record_address) {
         fs_file.seekp(record_address);
         fs_file.write(reinterpret_cast<const char *>(&directories), sizeof(directories));
     }
@@ -221,8 +221,8 @@ directory_item createDirectoryItem(int32_t nodeid, std::string name) {
  * @param name nezev adresare
  * @return reference na adresar
  */
-directory_item * getDirectoryItem(filesystem &filesystem_data, pseudo_inode &working_dir, std::string name) {
-    directory_item * dir_ptr = nullptr;
+directory_item *getDirectoryItem(filesystem &filesystem_data, pseudo_inode &working_dir, std::string name) {
+    directory_item *dir_ptr = nullptr;
     directory_item dir_name = createDirectoryItem(0, name);
     std::vector<directory_item> directories = getDirectories(filesystem_data, working_dir);
     for (auto &directory : directories) {
@@ -242,8 +242,8 @@ directory_item * getDirectoryItem(filesystem &filesystem_data, pseudo_inode &wor
  * @return existuje adresar stejneho jmena?
  */
 bool isDirectoryExists(filesystem &filesystem_data, pseudo_inode &working_dir, std::string name) {
-    directory_item * dir_ptr = getDirectoryItem(filesystem_data, working_dir, name);
-    if(dir_ptr != nullptr) {
+    directory_item *dir_ptr = getDirectoryItem(filesystem_data, working_dir, name);
+    if (dir_ptr != nullptr) {
         return true;
     }
     return false;

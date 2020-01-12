@@ -21,20 +21,20 @@ void mkdir(filesystem &filesystem_data, std::string &a1) {
     std::vector<std::string> a1_segments = splitPath(a1);
     pseudo_inode a1_parrent_inode;
     pseudo_inode *a1_parrent_inode_ptr = cd(filesystem_data, a1, false, false);
-    if(a1_parrent_inode_ptr != nullptr) {
+    if (a1_parrent_inode_ptr != nullptr) {
         a1_parrent_inode = *a1_parrent_inode_ptr;
     } else {
         std::cout << "PATH NOT FOUND" << std::endl;  // PARRENT DIRECTORY DOES NOT EXISTS
         return;
     }
     // adresar jiz existuje
-    if(nullptr != iNodeByLocation(filesystem_data, a1, false)) {
+    if (nullptr != iNodeByLocation(filesystem_data, a1, false)) {
         std::cout << "EXIST" << std::endl;
         return;
     }
     // pocet dostupnych volnych databloku
     int32_t blocks_available = availableDatablocks(filesystem_data);
-    if(!blocks_available) {
+    if (!blocks_available) {
         std::cout << "NOT ENOUGH SPACE" << std::endl;
         return;
     }
@@ -59,7 +59,7 @@ void mkdir(filesystem &filesystem_data, std::string &a1) {
     // zapis zaznamu adresare v nadrazenem adresari
     directory_item target_dir = createDirectoryItem(a1_inode.nodeid, a1_segments.back());
     int32_t address = addDirectoryItemEntry(filesystem_data, a1_parrent_inode, target_dir);
-    if(!address) {
+    if (!address) {
         std::cout << "MAXIMUM NUMBER OF FILES REACHED" << std::endl;
         removeINode(filesystem_data, fs_file, a1_inode);
         fs_file.close();

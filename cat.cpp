@@ -50,37 +50,32 @@ void readDataBlock(filesystem &filesystem_data, std::fstream &fs_file, int32_t l
  */
 void cat(filesystem &filesystem_data, std::string &s1) {
 
-    // cesta rozdelena na adresare
-    std::vector<std::string> segments = splitPath(s1);
-
-    // pracovni adresar
-    pseudo_inode *working_dir_ptr = cd(filesystem_data, s1, false, false);
-    pseudo_inode working_dir = filesystem_data.current_dir;
-    if(working_dir_ptr != nullptr) {
-        working_dir = *working_dir_ptr;
-    }
-
     // najdu odpovidajici inode
-    pseudo_inode inode;
-    pseudo_inode *inode_ptr = getFileINode(filesystem_data, working_dir, segments.back(), false);
-    if (inode_ptr != nullptr) {
-        inode = *inode_ptr;
-
-        std::fstream fs_file;
-        fs_file.open(filesystem_data.fs_file, std::ios::in | std::ios::out | std::ios::binary);
-
-        // platne adresy na databloky
-        std::vector<int32_t> addresses = usedDatablockByINode(filesystem_data, fs_file, inode, false);
-
-        // prochazeni adres databloku
-        for (auto &address : addresses) {
-            readDataBlock(filesystem_data, fs_file, address);
+    pseudo_inode s1_inode;
+    pseudo_inode *s1_inode_ptr = iNodeByLocation(filesystem_data, s1, false);
+    if (nullptr != s1_inode_ptr) {
+        s1_inode = *s1_inode_ptr;
+        if (s1_inode.isDirectory) {
+            std::cout << "FILE IS DIRECTORY" << std::endl;
+            return;
         }
-
-        std::cout << std::endl;
-
-        fs_file.close();
     } else {
+        std::cout << "PATH NOT FOUND" << std::endl;
         return;
     }
+
+    std::fstream fs_file;
+    fs_file.open(filesystem_data.fs_file, std::ios::in | std::ios::out | std::ios::binary);
+
+    // platne adresy na databloky
+    std::vector<int32_t> addresses = usedDatablockByINode(filesystem_data, fs_file, s1_inode, false);
+
+    // prochazeni adres databloku
+    for (auto &address : addresses) {
+        readDataBlock(filesystem_data, fs_file, address);
+    }
+
+    std::cout << std::endl;
+
+    fs_file.close();
 }

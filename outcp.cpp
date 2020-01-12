@@ -66,7 +66,7 @@ void outcp(filesystem &filesystem_data, std::string &s1, std::string &s2) {
         output_file.open(s2, std::ios::binary | std::ios::trunc | std::ios::in | std::ios::out);
         output_file.close();
 
-        if(!std::experimental::filesystem::exists(s2)) {
+        if (!std::experimental::filesystem::exists(s2)) {
             std::cout << "PATH NOT FOUND" << std::endl;
             return;
         }

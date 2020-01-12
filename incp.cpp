@@ -71,7 +71,7 @@ int32_t writeDatablock(filesystem &filesystem_data, int32_t *datablock, std::ifs
 void incp(filesystem &filesystem_data, std::string &s1, std::string &s2) {
 
     // existuje cesta ke vstupnimu souboru na pevnem disku?
-    if(!std::experimental::filesystem::exists(s1)) {
+    if (!std::experimental::filesystem::exists(s1)) {
         std::cout << "FILE NOT FOUND" << std::endl;
         return;
     }
@@ -81,7 +81,7 @@ void incp(filesystem &filesystem_data, std::string &s1, std::string &s2) {
 
     pseudo_inode *to_dir_ptr = cd(filesystem_data, s2, false, false);
     pseudo_inode to_dir = filesystem_data.current_dir;
-    if(to_dir_ptr != nullptr) {
+    if (to_dir_ptr != nullptr) {
         to_dir = *to_dir_ptr;
     } else {
         std::cout << "PATH NOT FOUND" << std::endl;
@@ -93,7 +93,7 @@ void incp(filesystem &filesystem_data, std::string &s1, std::string &s2) {
         std::cout << "EXIST" << std::endl;
         return;
     }
-    directory_item dir = createDirectoryItem(0,  to_segments.back());
+    directory_item dir = createDirectoryItem(0, to_segments.back());
 
     // spocte velikost input
     long filesize = getFilesize(s1);
@@ -103,15 +103,15 @@ void incp(filesystem &filesystem_data, std::string &s1, std::string &s2) {
     int32_t available_datablocks = availableDatablocks(filesystem_data);
     int32_t maximum_datablocks = maximumDatablocksPerINode(filesystem_data);
     int32_t datablock_needed = ceil((double) (filesize) / (double) (filesystem_data.super_block.cluster_size));
-    if(datablock_needed > 5) {
-        datablock_needed += ceil((double)datablock_needed/(double)links_per_cluster)+1;
+    if (datablock_needed > 5) {
+        datablock_needed += ceil((double) datablock_needed / (double) links_per_cluster) + 1;
     }
-    if(datablock_needed > available_datablocks) {
+    if (datablock_needed > available_datablocks) {
         int32_t free_space = available_datablocks * filesystem_data.super_block.cluster_size;
         std::cout << "NOT ENOUGH SPACE (FREE: " << free_space << " REQUIRED: " << filesize << ")" << std::endl;
         return;
     }
-    if(datablock_needed > maximum_datablocks) {
+    if (datablock_needed > maximum_datablocks) {
         int32_t max_file = maximum_datablocks * filesystem_data.super_block.cluster_size;
         std::cout << "FILE IS TOO LARGE (MAXIMUM: " << max_file << " REQUIRED: " << filesize << ")" << std::endl;
         return;

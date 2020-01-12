@@ -71,7 +71,7 @@ directory_item createDirectoryItem(int32_t nodeid, std::string name);
  * @param name nezev adresare
  * @return reference na adresar
  */
-directory_item * getDirectoryItem(filesystem &filesystem_data, pseudo_inode &working_dir, std::string name);
+directory_item *getDirectoryItem(filesystem &filesystem_data, pseudo_inode &working_dir, std::string name);
 
 /**
  * Vrati, zdali adresar tehoz jmena jiz existuje

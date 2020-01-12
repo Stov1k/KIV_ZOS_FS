@@ -53,7 +53,8 @@ int32_t createIndirectDatablock(filesystem &filesystem_data, std::fstream &fs_fi
  * @param structural_included vcetne strukturnich inodu (neprime odkazy)
  * @return vector adres databloku
  */
-std::vector<int32_t> usedDatablockByINode(filesystem &filesystem_data, std::fstream &fs_file, pseudo_inode &inode, bool structural_included);
+std::vector<int32_t>
+usedDatablockByINode(filesystem &filesystem_data, std::fstream &fs_file, pseudo_inode &inode, bool structural_included);
 
 /**
  * Prida datablok

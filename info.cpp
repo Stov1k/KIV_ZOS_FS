@@ -42,25 +42,25 @@ void info(filesystem &filesystem_data, std::string &name) {
     // pracovni adresar (nadrazeny adresar)
     pseudo_inode *working_dir_ptr = cd(filesystem_data, name, false, false);
     pseudo_inode working_dir = filesystem_data.current_dir;
-    if(working_dir_ptr != nullptr) {
+    if (working_dir_ptr != nullptr) {
         working_dir = *working_dir_ptr;
     }
 
     // dotazovany adresar / soubor
     pseudo_inode *quered_inode_ptr = iNodeByLocation(filesystem_data, name, false);
     pseudo_inode quered_inode = filesystem_data.current_dir;
-    if(quered_inode_ptr != nullptr) {
+    if (quered_inode_ptr != nullptr) {
         quered_inode = *quered_inode_ptr;
     }
 
-    if(quered_inode_ptr != nullptr && working_dir_ptr != nullptr) {
+    if (quered_inode_ptr != nullptr && working_dir_ptr != nullptr) {
         std::fstream fs_file;
         fs_file.open(filesystem_data.fs_file, std::ios::in | std::ios::out | std::ios::binary);
 
         // posunuti o adresar zpet, zkoumame-li adresar
-        if(quered_inode.isDirectory) {
+        if (quered_inode.isDirectory) {
             pseudo_inode *working_dir_ptr = getParrentDirectory(filesystem_data, fs_file, working_dir);
-            if(working_dir_ptr != nullptr) {
+            if (working_dir_ptr != nullptr) {
                 working_dir = *working_dir_ptr;
             }
         }

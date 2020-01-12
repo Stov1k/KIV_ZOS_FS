@@ -78,7 +78,7 @@ pseudo_inode *getFileINode(filesystem &filesystem_data, pseudo_inode &working_di
             input_file.seekp(getINodePosition(filesystem_data, directory.inode));
             input_file.read(reinterpret_cast<char *>(&inode), sizeof(pseudo_inode));
             if (inode.isDirectory) {
-                if(verbose) {
+                if (verbose) {
                     std::cout << "FILE IS DIRECTORY" << std::endl;
                 }
             } else {
@@ -107,7 +107,7 @@ pseudo_inode *iNodeByLocation(filesystem &filesystem_data, std::string &location
 
     // pracovni adresar nad nimz jsou provadeny zmeny
     pseudo_inode working_dir = filesystem_data.current_dir;
-    pseudo_inode * working_dir_ptr = &working_dir;
+    pseudo_inode *working_dir_ptr = &working_dir;
     // vynucene ukonceni cyklu pri neplatne ceste
     int force_break = 0;
     // prochazeni adresarema
@@ -147,7 +147,7 @@ pseudo_inode *iNodeByLocation(filesystem &filesystem_data, std::string &location
     fs_file.close();
 
     // vrati referenci na pracovni adresar / soubor
-    if(force_break) {
+    if (force_break) {
         working_dir_ptr = nullptr;
     }
     return working_dir_ptr;
