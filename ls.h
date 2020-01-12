@@ -12,6 +12,12 @@
  * @param filesystem_data filesystem
  * @param a1 adresar
  */
-void ls(filesystem &filesystem_data, pseudo_inode &a1);
+void ls(filesystem &filesystem_data, std::string &a1);
+
+/**
+ * Vypise obsah aktualniho adresare
+ * @param filesystem_data filesystem
+ */
+void ls(filesystem &filesystem_data);
 
 #endif //ZOSFS_LS_H

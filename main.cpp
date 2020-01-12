@@ -270,7 +270,11 @@ int32_t command(std::string cmd_string) {
         std::cout << "Bitmapa... " << std::endl;
         print_bitmap();
     } else if (cmd.size() > 0 && cmd[0] == "ls") {
-        ls(filesystem_data, filesystem_data.current_dir);
+        if (cmd.size() == 1) {
+            ls(filesystem_data);
+        } else {
+            ls(filesystem_data, cmd[1]);
+        }
     } else if (cmd.size() > 0 && cmd[0] == "pwd") {
         pwd(filesystem_data);
     } else if (cmd.size() > 0 && cmd[0] == "mkdir") {

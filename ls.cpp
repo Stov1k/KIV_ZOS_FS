@@ -53,3 +53,33 @@ void ls(filesystem &filesystem_data, pseudo_inode &a1) {
 
     fs_file.close();
 }
+
+/**
+ * Vypise obsah adresare a1
+ * @param filesystem_data filesystem
+ * @param a1 adresar
+ */
+void ls(filesystem &filesystem_data, std::string &a1) {
+    pseudo_inode a1_inode;
+    pseudo_inode *a1_inode_ptr = iNodeByLocation(filesystem_data, a1, false);
+    if (nullptr != a1_inode_ptr) {
+        a1_inode = *a1_inode_ptr;
+        if (!a1_inode.isDirectory) {
+            std::cout << "FILE IS NOT DIRECTORY" << std::endl;
+            return;
+        } else {
+            ls(filesystem_data, a1_inode);
+        }
+    } else {
+        std::cout << "PATH NOT FOUND" << std::endl;
+        return;
+    }
+}
+
+/**
+ * Vypise obsah adresare a1
+ * @param filesystem_data filesystem
+ */
+void ls(filesystem &filesystem_data) {
+    ls(filesystem_data, filesystem_data.current_dir);
+}
