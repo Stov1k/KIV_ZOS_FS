@@ -93,5 +93,14 @@ pseudo_inode *cd(filesystem &filesystem_data, std::string &a1, bool verbose, boo
  * @param a1 nazev adresare
  */
 void cd(filesystem &filesystem_data, std::string &a1) {
-    cd(filesystem_data, a1, true, true);
+    pseudo_inode working_dir;
+    pseudo_inode * working_dir_ptr = iNodeByLocation(filesystem_data, a1, true);
+    if(nullptr != working_dir_ptr) {
+        working_dir = *working_dir_ptr;
+        if(working_dir.isDirectory) {
+            filesystem_data.current_dir = working_dir;
+        } else {
+            std::cout << "FILE IS NOT DIRECTORY" << std::endl;
+        }
+    }
 }

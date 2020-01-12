@@ -84,7 +84,7 @@ void cp(filesystem &filesystem_data, std::string &s1, std::string &s2) {
     int32_t blocks_available = availableDatablocks(filesystem_data);
 
     if(blocks_available < blocks_used) {
-        std::cout << "NOT ENOUGH SPACE!" << std::endl;
+        std::cout << "NOT ENOUGH SPACE" << std::endl;
         return;
     }
 
@@ -101,7 +101,7 @@ void cp(filesystem &filesystem_data, std::string &s1, std::string &s2) {
         directory_item target_dir = createDirectoryItem(target_inode.nodeid, to_segments.back());
         int32_t address = addDirectoryItemEntry(filesystem_data, to_dir, target_dir);
     } else {
-        std::cout << "NO FREE INODE LEFT!" << std::endl;
+        std::cout << "NO FREE INODE LEFT" << std::endl;
         return;
     }
 

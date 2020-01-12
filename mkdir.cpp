@@ -17,137 +17,77 @@
  */
 void mkdir(filesystem &filesystem_data, std::string &a1) {
 
-    // stavajici umisteni
-    pseudo_inode original_location = filesystem_data.current_dir;
+    // nalezeni nadrazeneho adresare
+    std::vector<std::string> a1_segments = splitPath(a1);
+    pseudo_inode a1_parrent_inode;
+    pseudo_inode *a1_parrent_inode_ptr = cd(filesystem_data, a1, false, false);
+    if(a1_parrent_inode_ptr != nullptr) {
+        a1_parrent_inode = *a1_parrent_inode_ptr;
+    } else {
+        std::cout << "PATH NOT FOUND" << std::endl;  // PARRENT DIRECTORY DOES NOT EXISTS
+        return;
+    }
+    // adresar jiz existuje
+    if(nullptr != iNodeByLocation(filesystem_data, a1, false)) {
+        std::cout << "EXIST" << std::endl;
+        return;
+    }
+    // pocet dostupnych volnych databloku
+    int32_t blocks_available = availableDatablocks(filesystem_data);
+    if(!blocks_available) {
+        std::cout << "NOT ENOUGH SPACE" << std::endl;
+        return;
+    }
+    // nalezeny volny inode
+    pseudo_inode a1_inode;
+    pseudo_inode *a1_inode_ptr = getFreeINode(filesystem_data);
+    if (a1_inode_ptr != nullptr) {
+        a1_inode = *a1_inode_ptr;
+        a1_inode.isDirectory = true;
+        a1_inode.file_size = filesystem_data.super_block.cluster_size;
+    } else {
+        std::cout << "NO FREE INODE LEFT" << std::endl;
+        return;
+    }
 
-    // cesta rozdelena na adresare
-    std::vector<std::string> segments = splitPath(a1);
 
     std::fstream fs_file;
     fs_file.open(filesystem_data.fs_file, std::ios::in | std::ios::out | std::ios::binary);
+    // zapis inode
+    fs_file.seekp(getINodePosition(filesystem_data, a1_inode.nodeid));
+    fs_file.write(reinterpret_cast<const char *>(&a1_inode), sizeof(pseudo_inode));
+    // zapis zaznamu adresare v nadrazenem adresari
+    directory_item target_dir = createDirectoryItem(a1_inode.nodeid, a1_segments.back());
+    int32_t address = addDirectoryItemEntry(filesystem_data, a1_parrent_inode, target_dir);
+    if(!address) {
+        std::cout << "MAXIMUM NUMBER OF FILES REACHED" << std::endl;
+        removeINode(filesystem_data, fs_file, a1_inode);
+        fs_file.close();
+        return;
+    }
+    // pridam datablok
+    int32_t obtained_address = addDatablockToINode(filesystem_data, fs_file, a1_inode);
+    // aktualni adresar
+    directory_item dir_dot;
+    dir_dot = createDirectoryItem(a1_inode.nodeid, ".");
+    // predchozi adresar
+    directory_item dir_parrent;
+    dir_parrent = createDirectoryItem(a1_parrent_inode.nodeid, "..");
 
-    // vynucene ukonceni cyklu pri neplatne ceste
-    int force_break = 0;
-
-    // prochazeni adresarema
-    for (int i = 0; i < segments.size(); i++) {
-        if (i == 0 && segments[i].length() == 0) {   // zadana absolutni cesta
-            filesystem_data.current_dir = filesystem_data.root_dir;
-            continue;
-        } else if (i != 0 && segments[i].length() == 0) {    // ignorovani nasobnych lomitek
-            continue;
-        }
-
-        // novy adresar
-        directory_item dir = createDirectoryItem(0, segments[i]);
-
-        // nalezeny volny inode
-        pseudo_inode inode;
-        pseudo_inode *inode_ptr;
-
-        // zjistim, zdali jiz neexistuje adresar stejneho nazvu
-        if (isDirectoryExists(filesystem_data, filesystem_data.current_dir, segments[i])) {
-            force_break = -1;   // EXISTS
-            cd(filesystem_data, segments[i], false, true);
-            continue;
-        }
-
-        // najdu volny inode
-        inode_ptr = getFreeINode(filesystem_data);
-        if (inode_ptr != nullptr) {
-            inode = *inode_ptr;
-        } else {
-            force_break = 1;   // FREE INODE NOT FOUND
-            break;
-        }
-
-        // najdu v bitmape volny datablok
-        int32_t datablock_buf[4];
-        bool found = getFreeDatablock(filesystem_data, datablock_buf);
-        if (!found) {
-            force_break = 2;   // DISK IS FULL
-            break;
-        }
-        int32_t position_absolute = datablock_buf[0];       // poradi bitu od zacatku bitmapy
-        int32_t position_byte = datablock_buf[3];           // poradi bytu v bitmape
-        uint8_t bitmap_byte = (uint8_t) datablock_buf[2];
-
-        //v korenovem adresari vytvorim polozku dir(nazev, inode)
-        fs_file.seekp(filesystem_data.current_dir.direct1);
-        uint32_t dirs_per_cluster = filesystem_data.super_block.cluster_size / sizeof(directory_item);
-        directory_item dirs[dirs_per_cluster];
-        fs_file.read(reinterpret_cast<char *>(&dirs), sizeof(dirs));
-        for (int i = 0; i < dirs_per_cluster; i++) {
-            if (!dirs[i].inode) {
-                std::strncpy(dirs[i].item_name, dir.item_name, sizeof(dir.item_name));
-                dirs[i].inode = inode.nodeid;
-                break;
-            }
-        }
-
-        // aktualizace bitmapy
-        fs_file.seekp(filesystem_data.super_block.bitmap_start_address + position_byte); // skoci na bitmapu
-        fs_file.write(reinterpret_cast<const char *>(&bitmap_byte), sizeof(bitmap_byte));    // zapise upravenou bitmapu
-
-        // aktualizace podslozek v nadrazenem adresari
-        fs_file.seekp(filesystem_data.current_dir.direct1); // skoci na data
-        fs_file.write(reinterpret_cast<const char *>(&dirs), sizeof(dirs));
-
-        // zapis inode
-        fs_file.seekp(filesystem_data.super_block.inode_start_address + (inode.nodeid - 1) * sizeof(pseudo_inode));
-        inode.isDirectory = true;
-        inode.references++;
-        inode.direct1 = filesystem_data.super_block.data_start_address +
-                        (position_absolute * filesystem_data.super_block.cluster_size);
-        inode.direct2 = 0;
-        inode.direct3 = 0;
-        inode.direct4 = 0;
-        inode.direct5 = 0;
-        inode.indirect1 = 0;
-        inode.indirect2 = 0;
-        inode.file_size = filesystem_data.super_block.cluster_size;
-        fs_file.write(reinterpret_cast<const char *>(&inode), sizeof(pseudo_inode));
-
-        // aktualni adresar
-        directory_item dir_dot;
-        dir_dot = createDirectoryItem(inode.nodeid, ".");
-
-        // predchozi adresar
-        directory_item dir_parrent;
-        dir_parrent = createDirectoryItem(filesystem_data.current_dir.nodeid, "..");
-
-        directory_item subdirectories[dirs_per_cluster];
-        subdirectories[0] = dir_dot;                       // .
-        subdirectories[1] = dir_parrent;                   // ..
-        for (int i = 2; i < dirs_per_cluster; i++) {        // dalsi neobsazene
-            subdirectories[i] = directory_item{};
-            subdirectories[i].inode = 0;   // tj. nic
-        }
-
-        // aktualizace podslozek v novem adresari
-        fs_file.seekp(filesystem_data.super_block.data_start_address +
-                      (position_absolute * filesystem_data.super_block.cluster_size)); // skoci na data
-        fs_file.write(reinterpret_cast<const char *>(&subdirectories), sizeof(subdirectories));
-
-        // prejde do noveho adresare
-        cd(filesystem_data, segments[i], false, true);
+    int32_t dirs_per_cluster = dirsPerCluster(filesystem_data);
+    directory_item subdirectories[dirs_per_cluster];
+    subdirectories[0] = dir_dot;                    // .
+    subdirectories[1] = dir_parrent;                // ..
+    for (int i = 2; i < dirs_per_cluster; i++) {    // dalsi neobsazene
+        subdirectories[i] = directory_item{};
+        subdirectories[i].inode = 0;   // tj. nic
     }
 
-    // vypsani zpravy
-    if (force_break) {
-        if (force_break == -1) {
-            std::cout << "EXIST" << std::endl;
-        } else if (force_break == 1) {
-            std::cout << "FREE INODE NOT FOUND" << std::endl;
-        } else if (force_break == 2) {
-            std::cout << "DISK IS FULL" << std::endl;
-        }
-    } else {
-        std::cout << "OK" << std::endl;
-    }
+    // aktualizace podslozek v novem adresari
+    fs_file.seekp(a1_inode.direct1);
+    fs_file.write(reinterpret_cast<const char *>(&subdirectories), sizeof(subdirectories));
 
     fs_file.close();
 
-    // obnova umisteni
-    filesystem_data.current_dir = original_location;
+    std::cout << "OK" << std::endl;
 }

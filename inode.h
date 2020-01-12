@@ -39,4 +39,12 @@ pseudo_inode *getFileINode(filesystem &filesystem_data, pseudo_inode &working_di
  */
 pseudo_inode *iNodeByLocation(filesystem &filesystem_data, std::string &location, bool verbose);
 
+/**
+ * Uvolni inode
+ * @param filesystem_data filesystem
+ * @param fs_file otevreny soubor filesystemu
+ * @param inode adresar
+ */
+void removeINode(filesystem &filesystem_data, std::fstream &fs_file, pseudo_inode &inode);
+
 #endif //ZOSFS_INODE_H

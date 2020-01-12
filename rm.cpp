@@ -141,77 +141,51 @@ void removeDatablocksPositionInBitmap(filesystem &filesystem_data, std::fstream 
 }
 
 /**
- * Uvolni inode
- * @param filesystem_data filesystem
- * @param fs_file otevreny soubor filesystemu
- * @param inode adresar
- */
-void removeINode(filesystem &filesystem_data, std::fstream &fs_file, pseudo_inode &inode) {
-    int32_t inode_position = getINodePosition(filesystem_data, inode.nodeid);
-    inode.references = inode.references - 1;
-    if (inode.references < 1) {
-        inode.direct1 = 0;
-        inode.direct2 = 0;
-        inode.direct3 = 0;
-        inode.direct4 = 0;
-        inode.direct5 = 0;
-        inode.indirect1 = 0;
-        inode.indirect2 = 0;
-        inode.file_size = 0;
-        inode.nodeid = 0;
-    }
-    fs_file.seekp(inode_position);
-    fs_file.write(reinterpret_cast<const char *>(&inode), sizeof(pseudo_inode));
-}
-
-/**
  * Smaze prazdny adresar a1
  * @param filesystem_data fileszystem
  * @param a1 nazev adresare
  */
 void rmdir(filesystem &filesystem_data, std::string &a1) {
+
+    // nalezeni adresare a1
+    pseudo_inode a1_inode;
+    pseudo_inode *a1_inode_ptr = iNodeByLocation(filesystem_data, a1, false);
+    if(a1_inode_ptr != nullptr) {
+        a1_inode = *a1_inode_ptr;
+        if(!a1_inode.isDirectory) {
+            std::cout << "FILE IS NOT DIRECTORY" << std::endl;
+            return;
+        }
+        if(a1_inode.nodeid == 0) {
+            std::cout << "INVALID FILE" << std::endl;
+            return;
+        }
+    } else {
+        std::cout << "FILE NOT FOUND" << std::endl;  // FILE FILE DOES NOT EXISTS
+        return;
+    }
+
+
     std::fstream fs_file;
     fs_file.open(filesystem_data.fs_file, std::ios::in | std::ios::out | std::ios::binary);
 
-    pseudo_inode *inode_ptr = nullptr;
-    pseudo_inode inode;
-
-    // zjistim, zdali existuje adresar stejneho nazvu
-    std::vector<directory_item> directories = getDirectories(filesystem_data, filesystem_data.current_dir);
-    for (auto &directory : directories) {
-        if (strcmp(a1.c_str(), directory.item_name) == 0) {
-            fs_file.seekp(
-                    filesystem_data.super_block.inode_start_address + (directory.inode - 1) * sizeof(pseudo_inode));
-            fs_file.read(reinterpret_cast<char *>(&inode), sizeof(pseudo_inode));
-            if (inode.isDirectory) {
-                inode_ptr = &inode;
+    bool empty = isDirectoryEmpty(filesystem_data, fs_file, a1_inode);
+    if (empty) {
+        pseudo_inode *parrent_ptr = getParrentDirectory(filesystem_data, fs_file, a1_inode);
+        pseudo_inode parrent;
+        if (parrent_ptr != nullptr) {
+            parrent = *parrent_ptr;
+            if (parrent.nodeid != a1_inode.nodeid) {
+                removeLinkInParrentDir(filesystem_data, fs_file, a1_inode, parrent);
+                removeDatablockPositionInBitmap(filesystem_data, fs_file, a1_inode.direct1);
+                removeINode(filesystem_data, fs_file, a1_inode);
+                std::cout << "OK" << std::endl;
+            } else {
+                std::cout << "ROOT CANNOT BE REMOVED" << std::endl;
             }
-            break;
-        }
-    }
-
-    if (inode_ptr != nullptr) {
-        inode = *inode_ptr;     // TODO: asi uz nastavene, mozno smazat
-        bool empty = isDirectoryEmpty(filesystem_data, fs_file, inode);
-        if (empty) {
-            pseudo_inode *parrent_ptr = getParrentDirectory(filesystem_data, fs_file, inode);
-            pseudo_inode parrent;
-            if (parrent_ptr != nullptr) {
-                parrent = *parrent_ptr;
-                if (parrent.nodeid != inode.nodeid) {
-                    removeLinkInParrentDir(filesystem_data, fs_file, inode, parrent);
-                    removeDatablockPositionInBitmap(filesystem_data, fs_file, inode.direct1);
-                    removeINode(filesystem_data, fs_file, inode);
-                    std::cout << "OK" << std::endl;
-                } else {
-                    std::cout << "ROOT CANNOT BE REMOVED" << std::endl;
-                }
-            }
-        } else {
-            std::cout << "NOT EMPTY" << std::endl;
         }
     } else {
-        std::cout << "FILE NOT FOUND" << std::endl;
+        std::cout << "NOT EMPTY" << std::endl;
     }
 
     fs_file.close();

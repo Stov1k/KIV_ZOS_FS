@@ -152,3 +152,27 @@ pseudo_inode *iNodeByLocation(filesystem &filesystem_data, std::string &location
     }
     return working_dir_ptr;
 }
+
+/**
+ * Uvolni inode
+ * @param filesystem_data filesystem
+ * @param fs_file otevreny soubor filesystemu
+ * @param inode adresar
+ */
+void removeINode(filesystem &filesystem_data, std::fstream &fs_file, pseudo_inode &inode) {
+    int32_t inode_position = getINodePosition(filesystem_data, inode.nodeid);
+    inode.references = inode.references - 1;
+    if (inode.references < 1) {
+        inode.direct1 = 0;
+        inode.direct2 = 0;
+        inode.direct3 = 0;
+        inode.direct4 = 0;
+        inode.direct5 = 0;
+        inode.indirect1 = 0;
+        inode.indirect2 = 0;
+        inode.file_size = 0;
+        inode.nodeid = 0;
+    }
+    fs_file.seekp(inode_position);
+    fs_file.write(reinterpret_cast<const char *>(&inode), sizeof(pseudo_inode));
+}
