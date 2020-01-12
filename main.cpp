@@ -22,6 +22,7 @@
 #include "cd.h"
 #include "mkdir.h"
 #include "mv.h"
+#include "cp.h"
 #include "ls.h"
 
 int32_t command(std::string cmd_string);
@@ -66,7 +67,7 @@ void openFS() {
     if (!input_file.is_open()) {
         std::cout << "FS neni otevren. " << std::endl;
     }
-    std::cout << "Podpis: " << filesystem_data.super_block.signature << std::endl;
+    std::cout << "Podpis FS: " << filesystem_data.super_block.signature << std::endl;
 
     //nastaveni korenoveho adresare
     input_file.seekp(filesystem_data.super_block.inode_start_address);
@@ -90,6 +91,12 @@ void formatFS(int size) {
     // Vytvoreni / format souboru
     input_file.open(filesystem_data.fs_file, std::ios::binary | std::ios::trunc | std::ios::in | std::ios::out);
     input_file.close();
+
+    // existuje cesta ke vstupnimu souboru na pevnem disku?
+    if(!std::experimental::filesystem::exists(filesystem_data.fs_file)) {
+        std::cout << "CANNOT CREATE FILE" << std::endl;
+        return;
+    }
 
     // otevreni souboru pro zapis
     input_file.open(filesystem_data.fs_file, std::ios::binary | std::ios::trunc | std::ios::in | std::ios::out);
@@ -141,7 +148,6 @@ void formatFS(int size) {
 
     // zapis bitmapy
     for (int bmp = 0; bmp < bitmap_size_bytes; bmp++) {
-        std::cout << (int) byte << " pos:" << input_file.tellg() << std::endl;
         input_file.write(reinterpret_cast<const char *>(&byte), sizeof(byte));
     }
 
@@ -189,8 +195,7 @@ void formatFS(int size) {
 
     // vytvoreni korenoveho adresare: uprava bitmapy
     input_file.seekp(filesystem_data.super_block.bitmap_start_address); // skoci na bitmapu
-    uint8_t byte1{1};       // TODO: neni idealni, chci menit jen 1 bit, ne 1 byte
-    std::cout << (int) byte1 << " pos:" << input_file.tellg() << std::endl;
+    uint8_t byte1{1};
     input_file.write(reinterpret_cast<const char *>(&byte1), sizeof(byte1));    // zapise upravenou bitmapu
 
     // vytvoreni korenoveho adresare: zapis dat
@@ -203,8 +208,7 @@ void formatFS(int size) {
 
     input_file.close();
 
-    std::cout << "Popis: " << bitmap_size_bytes << std::endl;
-
+    std::cout << "OK" << std::endl;
 }
 
 void load(std::string s1) {
@@ -219,6 +223,7 @@ void load(std::string s1) {
     std::string cmd_string = "";
     while (std::getline(file, cmd_string)) {
         if(cmd_string.size() > 0) {
+            std::cout << "> " << cmd_string << std::endl;
             command(cmd_string);
         }
     }
@@ -236,7 +241,6 @@ int32_t command(std::string cmd_string) {
     std::vector<std::string> cmd(std::istream_iterator<std::string>{iss}, std::istream_iterator<std::string>());
 
     if (cmd.size() > 0 && cmd[0] == "format") {
-        std::cout << cmd.size() << std::endl;
         if (cmd.size() == 2) {
             std::cout << "FORMAT..." << std::endl;
             int fs_size = 0;
@@ -248,15 +252,12 @@ int32_t command(std::string cmd_string) {
                     fs_size = std::stoi(str_size);
                     if (cmd[1].at(i) == 'M') {
                         fs_size = fs_size * 1048576;
-                        std::cout << "MB" << std::endl;
                     } else if (cmd[1].at(i) == 'K') {
                         fs_size = fs_size * 1024;
-                        std::cout << "KB" << std::endl;
                     }
                     break;
                 }
             }
-            std::cout << fs_size << std::endl;
             formatFS(fs_size);
             openFS();
         } else {

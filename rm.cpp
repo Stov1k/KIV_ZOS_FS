@@ -243,7 +243,7 @@ void rm(filesystem &filesystem_data, std::string &a1) {
     }
 
     if (inode_ptr != nullptr) {
-        inode = *inode_ptr;     // TODO: asi uz nastavene, mozno smazat
+        inode = *inode_ptr;
         removeLinkInParrentDir(filesystem_data, fs_file, inode, filesystem_data.current_dir);
         removeDatablocksPositionInBitmap(filesystem_data, fs_file, inode);
         removeINode(filesystem_data, fs_file, inode);

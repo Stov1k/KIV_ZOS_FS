@@ -126,7 +126,6 @@ int32_t removeDirectoryItemEntry(filesystem &filesystem_data, pseudo_inode &work
     }
 
     if(record_address) {
-        std::cout << "C" << std::endl;
         fs_file.seekp(record_address);
         fs_file.write(reinterpret_cast<const char *>(&directories), sizeof(directories));
     }
