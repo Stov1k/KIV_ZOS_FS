@@ -9,6 +9,7 @@
 #include <iostream>
 #include <cstring>
 #include <vector>
+#include <experimental/filesystem>
 #include "outcp.h"
 #include "zosfsstruct.h"
 #include "directory.h"
@@ -65,6 +66,11 @@ void outcp(filesystem &filesystem_data, std::string &s1, std::string &s2) {
         output_file.open(s2, std::ios::binary | std::ios::trunc | std::ios::in | std::ios::out);
         output_file.close();
 
+        if(!std::experimental::filesystem::exists(s2)) {
+            std::cout << "PATH NOT FOUND" << std::endl;
+            return;
+        }
+
         fs_file.open(filesystem_data.fs_file, std::ios::in | std::ios::out | std::ios::binary);
         output_file.open(s2, std::ios::in | std::ios::out | std::ios::binary);
 
@@ -85,7 +91,10 @@ void outcp(filesystem &filesystem_data, std::string &s1, std::string &s2) {
 
         output_file.close();
         fs_file.close();
+
+        std::cout << "OK" << std::endl;
     } else {
+        std::cout << "FILE NOT FOUND" << std::endl;
         return;
     }
 }
