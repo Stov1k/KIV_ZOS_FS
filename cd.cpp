@@ -44,6 +44,9 @@ pseudo_inode *cd(filesystem &filesystem_data, std::string &a1, bool verbose, boo
         std::vector<directory_item> directories = getDirectories(filesystem_data, working_dir);
         for (auto &directory : directories) {
             force_break = 1;    // PATH NOT FOUND (v pripade nalezeni se prepise na 0 nebo 2)
+            if(i < segments.size() -1) {
+                working_dir_ptr = nullptr;
+            }
             if (strcmp(segments[i].c_str(), directory.item_name) == 0) {
                 fs_file.seekp(getINodePosition(filesystem_data, directory.inode));
                 pseudo_inode dir_inode;

@@ -47,9 +47,9 @@ void readDataBlock(filesystem &filesystem_data, std::fstream &fs_file, std::fstr
 }
 
 /**
- * Nahraje soubor s1 z pseudoNTFS do umisteni s2 na pevnem disku
+ * Nahraje soubor s1 z pseudoFS do umisteni s2 na pevnem disku
  * @param filesystem_data filesystem
- * @param s1 soubor pseudoNTFS
+ * @param s1 soubor pseudoFS
  * @param s2 soubor na pevnem disku
  */
 void outcp(filesystem &filesystem_data, std::string &s1, std::string &s2) {

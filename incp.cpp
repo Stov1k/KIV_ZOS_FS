@@ -9,6 +9,7 @@
 #include <iostream>
 #include <cstring>
 #include <cmath>
+#include <experimental/filesystem>
 #include "incp.h"
 #include "zosfsstruct.h"
 #include "inode.h"
@@ -62,22 +63,28 @@ int32_t writeDatablock(filesystem &filesystem_data, int32_t *datablock, std::ifs
 }
 
 /**
- * Zapis na FS
+ * Nahraje soubor s1 z pevneho disku do umisteni s2 v pseudoFS
  * @param filesystem_data filesystem
- * @param input vstupni soubor
- * @param location umisteni na FS
+ * @param s1 vstupni soubor na pevnem disku
+ * @param s2 umisteni na pseudoFS
  */
-void incp(filesystem &filesystem_data, std::string &input, std::string &location) {
+void incp(filesystem &filesystem_data, std::string &s1, std::string &s2) {
+
+    // existuje cesta ke vstupnimu souboru na pevnem disku?
+    if(!std::experimental::filesystem::exists(s1)) {
+        std::cout << "FILE NOT FOUND" << std::endl;
+        return;
+    }
 
     // cesta rozdelena na adresare
-    std::vector<std::string> to_segments = splitPath(location);
+    std::vector<std::string> to_segments = splitPath(s2);
 
-    pseudo_inode *to_dir_ptr = cd(filesystem_data, location, false, false);
+    pseudo_inode *to_dir_ptr = cd(filesystem_data, s2, false, false);
     pseudo_inode to_dir = filesystem_data.current_dir;
     if(to_dir_ptr != nullptr) {
         to_dir = *to_dir_ptr;
     } else {
-        std::cout << "DESTINATION DIRECTORY DOES NOT EXISTS!" << std::endl;
+        std::cout << "PATH NOT FOUND" << std::endl;
         return;
     }
 
@@ -89,7 +96,7 @@ void incp(filesystem &filesystem_data, std::string &input, std::string &location
     directory_item dir = createDirectoryItem(0,  to_segments.back());
 
     // spocte velikost input
-    long filesize = getFilesize(input);
+    long filesize = getFilesize(s1);
 
     // potreba volnych datablocku
     int32_t links_per_cluster = linksPerCluster(filesystem_data);
@@ -98,7 +105,6 @@ void incp(filesystem &filesystem_data, std::string &input, std::string &location
     int32_t datablock_needed = ceil((double) (filesize) / (double) (filesystem_data.super_block.cluster_size));
     if(datablock_needed > 5) {
         datablock_needed += ceil((double)datablock_needed/(double)links_per_cluster)+1;
-        std::cout << "DATABLOCK NEEDED: " << datablock_needed << std::endl;
     }
     if(datablock_needed > available_datablocks) {
         int32_t free_space = available_datablocks * filesystem_data.super_block.cluster_size;
@@ -136,7 +142,7 @@ void incp(filesystem &filesystem_data, std::string &input, std::string &location
         }
     }
 
-    std::ifstream cpin_file(input, std::ios::in | std::ios::binary);
+    std::ifstream cpin_file(s1, std::ios::in | std::ios::binary);
     // provest zapis
     int writed = 0;
     char buffer[filesystem_data.super_block.cluster_size];
