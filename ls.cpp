@@ -29,7 +29,7 @@ void ls(filesystem &filesystem_data, pseudo_inode &a1) {
     directory_item directories[dirs_per_cluster];
 
     // vypise hlavicku
-    std::cout << "NAME" << "\t" << "ND" << "\t" << "SIZE" << "\t" << std::endl;
+    //std::cout << "NAME" << "\t" << "ND" << "\t" << "SIZE" << "\t" << std::endl;
 
     // prochazeni adres databloku
     for (auto &address : addresses) {

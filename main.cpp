@@ -6,6 +6,9 @@
 #include <cmath>
 #include <cstring>
 #include <bitset>
+#include <sys/stat.h>
+#include <cstdio>
+#include <experimental/filesystem>
 #include "zosfsstruct.h"
 #include "incp.h"
 #include "inode.h"
@@ -20,8 +23,8 @@
 #include "mkdir.h"
 #include "mv.h"
 #include "ls.h"
-#include <sys/stat.h>
-#include <cstdio>
+
+int32_t command(std::string cmd_string);
 
 filesystem filesystem_data;
 
@@ -204,6 +207,25 @@ void formatFS(int size) {
 
 }
 
+void load(std::string s1) {
+
+    // existuje cesta ke vstupnimu souboru na pevnem disku?
+    if(!std::experimental::filesystem::exists(s1)) {
+        std::cout << "FILE NOT FOUND" << std::endl;
+        return;
+    }
+    // nacteni prikazu ze souboru
+    std::ifstream file(s1);
+    std::string cmd_string = "";
+    while (std::getline(file, cmd_string)) {
+        if(cmd_string.size() > 0) {
+            command(cmd_string);
+        }
+    }
+
+    std::cout << "OK" << std::endl;
+}
+
 /**
  * Zpracovani prikazu
  * @param cmd_string prikaz
@@ -247,9 +269,6 @@ int32_t command(std::string cmd_string) {
         std::cout << "Bitmapa... " << std::endl;
         print_bitmap();
     } else if (cmd.size() > 0 && cmd[0] == "ls") {
-        int bitmap_size_bytes = (filesystem_data.super_block.inode_start_address -
-                                 filesystem_data.super_block.bitmap_start_address);
-        std::cout << "Obsah " << bitmap_size_bytes << std::endl;
         ls(filesystem_data, filesystem_data.current_dir);
     } else if (cmd.size() > 0 && cmd[0] == "pwd") {
         pwd(filesystem_data);
@@ -314,9 +333,17 @@ int32_t command(std::string cmd_string) {
         } else {
             cat(filesystem_data, cmd[1]);
         }
+    } else if (cmd.size() > 0 && cmd[0] == "load") {
+        if(cmd.size() == 1) {
+            std::cout << "load: missing operand" << std::endl;
+        } else {
+            load(cmd[1]);
+        }
     } else if (cmd[0] == "q") {
         std::cout << "QUIT" << std::endl;
         return 1;
+    } else {
+        std::cout << "UNKNOWN COMMAND" << std::endl;
     };
     return 0;
 }
@@ -359,10 +386,9 @@ int main(int argc, char **argv) {
     // Smycka prikazu
     while (true) {
         std::cout << "> ";
-        std::string cmd_string;
+        std::string cmd_string = "";
         std::getline(std::cin, cmd_string);  // nacte cely radek
-
-        if(command(cmd_string)) {
+        if(cmd_string.size() > 0 && command(cmd_string)) {
             return 0;
         }
     }
