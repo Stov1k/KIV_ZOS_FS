@@ -124,7 +124,7 @@ void format(filesystem &filesystem_data, int32_t size) {
     // vytvoreni korenoveho adresare
     directory_item dir;
     inode.nodeid = 1;
-    inode.isDirectory = true;
+    inode.type = 1;
     inode.references++;
     inode.direct1 = filesystem_data.super_block.data_start_address;
     inode.direct2 = 0;

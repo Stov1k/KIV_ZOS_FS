@@ -77,7 +77,7 @@ pseudo_inode *getFileINode(filesystem &filesystem_data, pseudo_inode &working_di
         if (strcmp(s1.c_str(), directory.item_name) == 0) {
             input_file.seekp(getINodePosition(filesystem_data, directory.inode));
             input_file.read(reinterpret_cast<char *>(&inode), sizeof(pseudo_inode));
-            if (inode.isDirectory) {
+            if (inode.type == 1) {
                 if (verbose) {
                     std::cout << "FILE IS DIRECTORY" << std::endl;
                 }

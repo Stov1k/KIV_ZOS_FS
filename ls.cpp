@@ -40,8 +40,10 @@ void ls(filesystem &filesystem_data, pseudo_inode &a1) {
                 pseudo_inode inode;
                 fs_file.seekp(getINodePosition(filesystem_data, directories[i].inode));
                 fs_file.read(reinterpret_cast<char *>(&inode), sizeof(pseudo_inode));
-                if (inode.isDirectory) {
+                if (inode.type == 1) {
                     std::cout << " + ";
+                } else if (inode.type == 2) {
+                    std::cout << " s ";
                 } else {
                     std::cout << " - ";
                 }
@@ -64,7 +66,7 @@ void ls(filesystem &filesystem_data, std::string &a1) {
     pseudo_inode *a1_inode_ptr = iNodeByLocation(filesystem_data, a1, false);
     if (nullptr != a1_inode_ptr) {
         a1_inode = *a1_inode_ptr;
-        if (!a1_inode.isDirectory) {
+        if (a1_inode.type != 1) {
             std::cout << "FILE IS NOT DIRECTORY" << std::endl;
             return;
         } else {

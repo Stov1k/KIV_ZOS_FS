@@ -152,7 +152,7 @@ void rmdir(filesystem &filesystem_data, std::string &a1) {
     pseudo_inode *a1_inode_ptr = iNodeByLocation(filesystem_data, a1, false);
     if (a1_inode_ptr != nullptr) {
         a1_inode = *a1_inode_ptr;
-        if (!a1_inode.isDirectory) {
+        if (a1_inode.type != 1) {
             std::cout << "FILE IS NOT DIRECTORY" << std::endl;
             return;
         }
@@ -214,7 +214,7 @@ void rm(filesystem &filesystem_data, std::string &s1) {
     pseudo_inode *s1_inode_ptr = iNodeByLocation(filesystem_data, s1, false);
     if (s1_inode_ptr != nullptr) {
         s1_inode = *s1_inode_ptr;
-        if (s1_inode.isDirectory) {
+        if (s1_inode.type == 1) {
             std::cout << "FILE IS DIRECTORY" << std::endl;
             return;
         }

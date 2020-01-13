@@ -247,7 +247,7 @@ void incp(filesystem &filesystem_data, std::string &s1, std::string &s2) {
     fs_file.write(reinterpret_cast<const char *>(&dirs), sizeof(dirs));
 
     // zapis inode
-    inode.isDirectory = false;
+    inode.type = 0;
     inode.references++;
     fs_file.seekp(getINodePosition(filesystem_data, inode.nodeid));
     fs_file.write(reinterpret_cast<const char *>(&inode), sizeof(pseudo_inode));

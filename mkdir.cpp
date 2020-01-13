@@ -43,7 +43,7 @@ void mkdir(filesystem &filesystem_data, std::string &a1) {
     pseudo_inode *a1_inode_ptr = getFreeINode(filesystem_data);
     if (a1_inode_ptr != nullptr) {
         a1_inode = *a1_inode_ptr;
-        a1_inode.isDirectory = true;
+        a1_inode.type = 1;
         a1_inode.file_size = filesystem_data.super_block.cluster_size;
     } else {
         std::cout << "NO FREE INODE LEFT" << std::endl;
@@ -53,9 +53,11 @@ void mkdir(filesystem &filesystem_data, std::string &a1) {
 
     std::fstream fs_file;
     fs_file.open(filesystem_data.fs_file, std::ios::in | std::ios::out | std::ios::binary);
+
     // zapis inode
     fs_file.seekp(getINodePosition(filesystem_data, a1_inode.nodeid));
     fs_file.write(reinterpret_cast<const char *>(&a1_inode), sizeof(pseudo_inode));
+
     // zapis zaznamu adresare v nadrazenem adresari
     directory_item target_dir = createDirectoryItem(a1_inode.nodeid, a1_segments.back());
     int32_t address = addDirectoryItemEntry(filesystem_data, a1_parrent_inode, target_dir);
@@ -65,11 +67,14 @@ void mkdir(filesystem &filesystem_data, std::string &a1) {
         fs_file.close();
         return;
     }
+
     // pridam datablok
     int32_t obtained_address = addDatablockToINode(filesystem_data, fs_file, a1_inode);
+
     // aktualni adresar
     directory_item dir_dot;
     dir_dot = createDirectoryItem(a1_inode.nodeid, ".");
+
     // predchozi adresar
     directory_item dir_parrent;
     dir_parrent = createDirectoryItem(a1_parrent_inode.nodeid, "..");

@@ -25,6 +25,7 @@
 #include "cp.h"
 #include "ls.h"
 #include "format.h"
+#include "slink.h"
 
 int32_t command(std::string cmd_string);
 
@@ -181,6 +182,12 @@ int32_t command(std::string cmd_string) {
             std::cout << "outcp: missing operand" << std::endl;
         } else {
             outcp(filesystem_data, cmd[1], cmd[2]);
+        }
+    } else if (cmd.size() > 0 && cmd[0] == "slink") {
+        if (cmd.size() < 3) {
+            std::cout << "slink: missing operand" << std::endl;
+        } else {
+            slink(filesystem_data, cmd[1], cmd[2]);
         }
     } else if (cmd.size() > 0 && cmd[0] == "mv") {
         if (cmd.size() < 3) {

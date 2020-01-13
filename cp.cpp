@@ -94,7 +94,7 @@ void cp(filesystem &filesystem_data, std::string &s1, std::string &s2) {
     target_inode_ptr = getFreeINode(filesystem_data);
     if (target_inode_ptr != nullptr) {
         target_inode = *target_inode_ptr;
-        target_inode.isDirectory = source_inode.isDirectory;
+        target_inode.type = source_inode.type;
         target_inode.file_size = source_inode.file_size;
         fs_file.seekp(getINodePosition(filesystem_data, target_inode.nodeid));
         fs_file.write(reinterpret_cast<const char *>(&target_inode), sizeof(pseudo_inode));

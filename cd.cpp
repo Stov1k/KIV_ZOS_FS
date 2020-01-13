@@ -51,7 +51,7 @@ pseudo_inode *cd(filesystem &filesystem_data, std::string &a1, bool verbose, boo
                 fs_file.seekp(getINodePosition(filesystem_data, directory.inode));
                 pseudo_inode dir_inode;
                 fs_file.read(reinterpret_cast<char *>(&dir_inode), sizeof(pseudo_inode));
-                if (dir_inode.isDirectory) {
+                if (dir_inode.type == 1) {
                     working_dir = dir_inode;
                     working_dir_ptr = &working_dir;
                     force_break = 0;        // OK
@@ -93,12 +93,12 @@ pseudo_inode *cd(filesystem &filesystem_data, std::string &a1, bool verbose, boo
  * @param a1 nazev adresare
  */
 void cd(filesystem &filesystem_data, std::string &a1) {
-    pseudo_inode working_dir;
-    pseudo_inode *working_dir_ptr = iNodeByLocation(filesystem_data, a1, false);
-    if (nullptr != working_dir_ptr) {
-        working_dir = *working_dir_ptr;
-        if (working_dir.isDirectory) {
-            filesystem_data.current_dir = working_dir;
+    pseudo_inode a1_inode;
+    pseudo_inode *a1_inode_ptr = iNodeByLocation(filesystem_data, a1, false);
+    if (nullptr != a1_inode_ptr) {
+        a1_inode = *a1_inode_ptr;
+        if (a1_inode.type == 1) {
+            filesystem_data.current_dir = a1_inode;
             std::cout << "OK" << std::endl;
             return;
         } else {

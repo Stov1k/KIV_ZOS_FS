@@ -77,7 +77,7 @@ std::string pwd(filesystem &filesystem_data, pseudo_inode &inode, bool verbose) 
     pseudo_inode current = inode;
     pseudo_inode root = filesystem_data.root_dir;
 
-    if (current.isDirectory) {
+    if (current.type == 1) {
         s_path.push(current);
         do {
             current = *getParrentDirectory(filesystem_data, fs_file, current);

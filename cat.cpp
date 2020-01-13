@@ -55,7 +55,7 @@ void cat(filesystem &filesystem_data, std::string &s1) {
     pseudo_inode *s1_inode_ptr = iNodeByLocation(filesystem_data, s1, false);
     if (nullptr != s1_inode_ptr) {
         s1_inode = *s1_inode_ptr;
-        if (s1_inode.isDirectory) {
+        if (s1_inode.type == 1) {
             std::cout << "FILE IS DIRECTORY" << std::endl;
             return;
         }

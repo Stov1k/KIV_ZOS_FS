@@ -58,7 +58,7 @@ void info(filesystem &filesystem_data, std::string &name) {
         fs_file.open(filesystem_data.fs_file, std::ios::in | std::ios::out | std::ios::binary);
 
         // posunuti o adresar zpet, zkoumame-li adresar
-        if (quered_inode.isDirectory) {
+        if (quered_inode.type == 1) {
             pseudo_inode *working_dir_ptr = getParrentDirectory(filesystem_data, fs_file, working_dir);
             if (working_dir_ptr != nullptr) {
                 working_dir = *working_dir_ptr;
