@@ -129,7 +129,7 @@ pseudo_inode *iNodeByLocation(filesystem &filesystem_data, std::string &location
                 pseudo_inode dir_inode;
                 fs_file.read(reinterpret_cast<char *>(&dir_inode), sizeof(pseudo_inode));
 
-                if(redirect) {  // prace se symbolickymi odkazy
+                if (redirect) {  // prace se symbolickymi odkazy
                     if (dir_inode.type == 2) {
                         int32_t cluster_size = filesystem_data.super_block.cluster_size;
                         char buffer[cluster_size];

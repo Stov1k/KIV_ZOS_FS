@@ -37,7 +37,7 @@ void slink(filesystem &filesystem_data, std::string &s1, std::string &s2) {
     pseudo_inode *a2_parrent_inode_ptr = cd(filesystem_data, s2, false, false);
     if (a2_parrent_inode_ptr != nullptr) {
         a2_parrent_inode = *a2_parrent_inode_ptr;
-        if(a2_parrent_inode.type != 1) {
+        if (a2_parrent_inode.type != 1) {
             std::cout << "FILE IS NOT DIRECTORY" << std::endl;
             return;
         }

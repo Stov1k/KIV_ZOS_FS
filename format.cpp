@@ -68,7 +68,7 @@ void format(filesystem &filesystem_data, int32_t size) {
     filesystem_data.super_block.volume_descriptor[sizeof(filesystem_data.super_block.volume_descriptor) - 1] = '\0';
 
     int cluster_size = 1024;
-    if (size > 314572800) {
+    if (size > 629145600) {
         cluster_size = 4096;
     } else if (size > 104857600) {
         cluster_size = 2048;
