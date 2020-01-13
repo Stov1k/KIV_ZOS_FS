@@ -89,7 +89,6 @@ void slink(filesystem &filesystem_data, std::string &s1, std::string &s2) {
     memset(buffer, EOF, cluster_size);
     std::string path = s1;
     path.copy(buffer, cluster_size);
-    buffer[path.size()] = '\n';
 
     // aktualizace dat
     fs_file.seekp(s2_inode.direct1);

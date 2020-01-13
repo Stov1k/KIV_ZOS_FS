@@ -36,6 +36,17 @@ pseudo_inode *getFileINode(filesystem &filesystem_data, pseudo_inode &working_di
  * @param filesystem_data filesystem
  * @param location lokace / nazev souboru
  * @param verbose vypisovani zprav
+ * @param redirect presmerovani symbolickych odkazu
+ * @return reference na inode
+ */
+pseudo_inode *iNodeByLocation(filesystem &filesystem_data, std::string &location, bool verbose, bool redirect);
+
+/**
+ * Vrati referenci na inode adresare nebo souboru
+ * @param filesystem_data filesystem
+ * @param location lokace / nazev souboru
+ * @param verbose vypisovani zprav
+ * @return reference na inode
  */
 pseudo_inode *iNodeByLocation(filesystem &filesystem_data, std::string &location, bool verbose);
 

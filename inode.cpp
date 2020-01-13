@@ -97,8 +97,10 @@ pseudo_inode *getFileINode(filesystem &filesystem_data, pseudo_inode &working_di
  * @param filesystem_data filesystem
  * @param location lokace / nazev souboru
  * @param verbose vypisovani zprav
+ * @param redirect presmerovani symbolickych odkazu
+ * @return reference na inode
  */
-pseudo_inode *iNodeByLocation(filesystem &filesystem_data, std::string &location, bool verbose) {
+pseudo_inode *iNodeByLocation(filesystem &filesystem_data, std::string &location, bool verbose, bool redirect) {
     // cesta rozdelena na adresare
     std::vector<std::string> segments = splitPath(location);
     // otevreni souboru fs
@@ -106,27 +108,55 @@ pseudo_inode *iNodeByLocation(filesystem &filesystem_data, std::string &location
     fs_file.open(filesystem_data.fs_file, std::ios::in | std::ios::out | std::ios::binary);
 
     // pracovni adresar nad nimz jsou provadeny zmeny
-    pseudo_inode working_dir = filesystem_data.current_dir;
-    pseudo_inode *working_dir_ptr = &working_dir;
+    pseudo_inode working_inode = filesystem_data.current_dir;
+    pseudo_inode *working_inode_ptr = &working_inode;
     // vynucene ukonceni cyklu pri neplatne ceste
     int force_break = 0;
     // prochazeni adresarema
     for (int i = 0; i < segments.size(); i++) {
         if (i == 0 && segments[i].length() == 0) {   // zadana absolutni cesta
-            working_dir = filesystem_data.root_dir;
+            working_inode = filesystem_data.root_dir;
             continue;
         } else if (i != 0 && segments[i].length() == 0) {    // ignorovani nasobnych lomitek
             continue;
         }
         // zjistim, zdali existuje adresar stejneho nazvu
-        std::vector<directory_item> directories = getDirectories(filesystem_data, working_dir);
+        std::vector<directory_item> directories = getDirectories(filesystem_data, working_inode);
         for (auto &directory : directories) {
             force_break = 1;    // PATH NOT FOUND (v pripade nalezeni se prepise na 0 nebo 2)
             if (strcmp(segments[i].c_str(), directory.item_name) == 0) {
                 fs_file.seekp(getINodePosition(filesystem_data, directory.inode));
                 pseudo_inode dir_inode;
                 fs_file.read(reinterpret_cast<char *>(&dir_inode), sizeof(pseudo_inode));
-                working_dir = dir_inode;
+
+                if(redirect) {  // prace se symbolickymi odkazy
+                    if (dir_inode.type == 2) {
+                        int32_t cluster_size = filesystem_data.super_block.cluster_size;
+                        char buffer[cluster_size];
+                        fs_file.seekp(dir_inode.direct1);
+                        fs_file.read(buffer, cluster_size);
+                        std::string link_loc = "";
+                        for (int i = 0; i < cluster_size; i++) {
+                            if (buffer[i] != EOF) {
+                                link_loc.push_back(buffer[i]);
+                            } else {
+                                break;
+                            }
+                        }
+                        pseudo_inode *link_inode_ptr = iNodeByLocation(filesystem_data, link_loc, false);
+                        if (nullptr != link_inode_ptr) {
+                            working_inode = *link_inode_ptr;
+                        } else {
+                            force_break = 1;
+                            break;
+                        }
+                    } else {
+                        working_inode = dir_inode;
+                    }
+                } else {        // prace bez symbolickych odkazu
+                    working_inode = dir_inode;
+                }
+
                 force_break = 0;        // OK
                 break;
             }
@@ -148,9 +178,20 @@ pseudo_inode *iNodeByLocation(filesystem &filesystem_data, std::string &location
 
     // vrati referenci na pracovni adresar / soubor
     if (force_break) {
-        working_dir_ptr = nullptr;
+        working_inode_ptr = nullptr;
     }
-    return working_dir_ptr;
+    return working_inode_ptr;
+}
+
+/**
+ * Vrati referenci na inode adresare nebo souboru
+ * @param filesystem_data filesystem
+ * @param location lokace / nazev souboru
+ * @param verbose vypisovani zprav
+ * @return reference na inode
+ */
+pseudo_inode *iNodeByLocation(filesystem &filesystem_data, std::string &location, bool verbose) {
+    return iNodeByLocation(filesystem_data, location, verbose, true);
 }
 
 /**

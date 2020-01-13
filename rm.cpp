@@ -149,7 +149,7 @@ void rmdir(filesystem &filesystem_data, std::string &a1) {
 
     // nalezeni adresare a1
     pseudo_inode a1_inode;
-    pseudo_inode *a1_inode_ptr = iNodeByLocation(filesystem_data, a1, false);
+    pseudo_inode *a1_inode_ptr = iNodeByLocation(filesystem_data, a1, false, false);
     if (a1_inode_ptr != nullptr) {
         a1_inode = *a1_inode_ptr;
         if (a1_inode.type != 1) {
@@ -211,7 +211,7 @@ void rm(filesystem &filesystem_data, std::string &s1) {
 
     // nalezeni souboru s1
     pseudo_inode s1_inode;
-    pseudo_inode *s1_inode_ptr = iNodeByLocation(filesystem_data, s1, false);
+    pseudo_inode *s1_inode_ptr = iNodeByLocation(filesystem_data, s1, false, false);
     if (s1_inode_ptr != nullptr) {
         s1_inode = *s1_inode_ptr;
         if (s1_inode.type == 1) {

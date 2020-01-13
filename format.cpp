@@ -78,7 +78,10 @@ void format(filesystem &filesystem_data, int32_t size) {
     remaining_space = remaining_space - (inodes * sizeof(pseudo_inode));
     int bitmap_size = 0;
     while (remaining_space > 0) {
-        remaining_space = remaining_space - cluster_size - 1;
+        remaining_space = remaining_space - cluster_size;
+        if (bitmap_size % 8 == 0) {
+            remaining_space -= 1;
+        }
         bitmap_size += 1;
     }
     int correction = bitmap_size %
