@@ -1,0 +1,313 @@
+\documentclass[12pt]{scrartcl}
+
+\usepackage[utf8]{inputenc}
+\usepackage[IL2]{fontenc}
+\usepackage[czech]{babel}
+\usepackage[table,xcdraw,dvipsnames]{xcolor}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{multirow}
+\usepackage{booktabs}
+\usepackage{lipsum}
+\usepackage{amsmath}
+
+\input{kvmacros}
+
+\usepackage{tikz}
+\usetikzlibrary{calc}%
+\newcommand{\tikzmark}[1]{%
+    \tikz[overlay, remember picture, baseline] \node (#1) {};%
+}
+\newcommand{\DrawArrow}[3][]{%
+    \begin{tikzpicture}[overlay,remember picture]
+        \draw[
+                ->, thick,% distance=\ArcDistance,
+                %shorten <=\ShortenBegin, shorten >=\ShortenEnd,
+                %out=\OutAngle, in=\InAngle, Arrow Style, #2
+                #1
+            ]
+                ($(#2)+(-0.50em,3.5ex)$) to
+                ($(#3)+(1.5em,0.0ex)$);
+    \end{tikzpicture}% <-- important
+}
+
+\begin{document}
+\begin{titlepage}
+	\centering
+	{\fontsize{22}{40}\selectfont
+	Západočeská univerzita v Plzni\par
+	Fakulta aplikovaných věd\par
+	Katedra informatiky a výpočetní techniky\par
+	}		
+	\vspace{2.75cm}
+	{\huge\bfseries KIV/ZOS \\ Semestrální práce \par}
+	\vspace{2cm}
+	{\Huge\bfseries Souborový systém \par}
+	\vfill
+	\raggedleft
+	{\fontsize{16}{0}\selectfont \today \hfill}
+	\raggedright
+	{\fontsize{16}{0}\selectfont Pavel Zelenka}
+\end{titlepage}
+\newpage
+\pagenumbering{arabic}
+\newpage
+\section{Úvod}
+\subsection{Zadání práce}
+\paragraph{}
+Tématem semestrální práce je práce se zjednodušeným souborovým systémem založeným na
+i-uzlech.
+\paragraph{}
+Základní funkčnost, kterou musí program splňovat. Formát výpisů je závazný.
+\paragraph{}
+Program bude mít jeden parametr a tím bude název souborového systému. Po spuštění bude program čekat na zadání jednotlivých příkazů s minimální funkčností viz níže (všechny soubory mohou být zadány jak absolutní, tak relativní cestou):
+
+\begin{enumerate}
+\item Zkopíruje soubor s1 do umístění s2.\\
+\texttt{cp s1 s2}\\
+Možný výsledek:\\
+\texttt{OK}\\
+\texttt{FILE NOT FOUND} (není zdroj)\\
+\texttt{PATH NOT FOUND} (neexistuje cílová cesta)
+\item Přesune soubor s1 do umístění s2.
+\texttt{mv s1 s2}\\
+Možný výsledek:\\
+\texttt{OK}\\
+\texttt{FILE NOT FOUND} (není zdroj)\\
+\texttt{PATH NOT FOUND} (neexistuje cílová cesta)
+\item Smaže soubor s1.\\
+\texttt{rm s1}\\
+Možný výsledek:\\
+\texttt{OK}\\
+\texttt{FILE NOT FOUND}
+\item Vytvoří adresář a1.\\
+\texttt{mkdir a1}\\
+Možný výsledek:\\
+\texttt{OK}\\
+\texttt{PATH NOT FOUND} (neexistuje zadaná cesta)\\
+\texttt{EXIST} (nelze založit, již existuje)
+\item Smaže prázdný adresář a1.\\
+\texttt{rmdir a1}\\
+Možný výsledek:\\
+\texttt{OK}\\
+\texttt{FILE NOT FOUND} (neexistující adresář)\\
+\texttt{NOT EMPTY} (adresář obsahuje podadresáře, nebo soubory)
+\item Vypíše obsah adresáře a1.\\
+\texttt{ls a1}\\
+Možný výsledek:\\
+\texttt{-FILE}\\
+\texttt{+DIRECTORY}\\
+\texttt{PATH NOT FOUND} (neexistující adresář)
+\item Vypíše obsah souboru s1.\\
+\texttt{cat s1}\\
+Možný výsledek:\\
+\texttt{OBSAH}\\
+\texttt{FILE NOT FOUND} (není zdroj)
+\item Změní aktuální cestu do adresáře a1.\\
+\texttt{cd a1}\\
+Možný výsledek:\\
+\texttt{OK}\\
+\texttt{PATH NOT FOUND} (neexistující cesta)
+\item Vypíše aktuální cestu.\\
+\texttt{pwd}\\
+Možný výsledek:\\
+\texttt{PATH}
+\item Vypíše informace o souboru/adresáři s1/a1 (v jakých clusterech se nachází).\\
+\texttt{info a1/s1}\\
+Možný výsledek:\\
+\texttt{NAME - SIZE - i-node NUMBER - přímé a nepřímé odkazy}\\
+\texttt{FILE NOT FOUND} (není zdroj)
+\item Nahraje soubor s1 z pevného disku do umístění s2 v pseudoNTFS.\\
+\texttt{incp s1 s2}\\
+Možný výsledek:\\
+\texttt{OK}\\
+\texttt{FILE NOT FOUND} (není zdroj)\\
+\texttt{PATH NOT FOUND} (neexistuje cílová cesta)
+\item Nahraje soubor s1 z pseudoNTFS do umístění s2 na pevném disku.\\
+\texttt{outcp s1 s2}\\
+Možný výsledek:\\
+\texttt{OK}\\
+\texttt{FILE NOT FOUND} (není zdroj)\\
+\texttt{PATH NOT FOUND} (neexistuje cílová cesta)\\
+\item Načte soubor z pevného disku, ve kterém budou jednotlivé příkazy, a začne je sekvenčně
+vykonávat. Formát je 1 příkaz/1řádek.\\
+\texttt{load s1}\\
+Možný výsledek:\\
+\texttt{OK}\\
+\texttt{FILE NOT FOUND} (není zdroj)
+\item Příkaz provede formát souboru, který byl zadán jako parametr při spuštení programu na
+souborový systém dané velikosti. Pokud už soubor nějaká data obsahoval, budou přemazána.
+Pokud soubor neexistoval, bude vytvořen.
+\texttt{format 600MB}\\
+Možný výsledek:\\
+\texttt{OK}\\
+\texttt{CANNOT CREATE FILE}
+\item Vytvoří symbolický link na soubor s1 s názvem s2.\\
+\texttt{slink s1 s2}\\
+Možný výsledek:\\
+\texttt{OK}\\
+\texttt{FILE NOT FOUND} (není zdroj)
+\end{enumerate}
+\paragraph{}
+Budeme předpokládat korektní zadání syntaxe příkazů, nikoliv však sémantiky (tj. např. cp s1 zadáno nebude, ale může být zadáno cat s1, kde s1 neexistuje).
+
+\subsection{Popis souborového systému využivající i-uzly}
+\paragraph{}
+Soubor souborového systému je rozdělen do \texttt{N} \textbf{blokových skupin}. Každá bloková skupina obsahuje na začátku \textbf{superblok}, kde je uvedeno další rozdělení na \textbf{bitmapu}, \textbf{i-uzly} a \textbf{datové bloky}. Bitmapa obsahuje informace o zaplnění datových bloků, kdy pořadí bitu v bitmapě odpovídá pořadí datového bloku. I-uzel reprezentuje záznam souboru, kde je uvedena velikost souboru, typ souboru a odkazy na datové bloky. Datové bloky jsou pozice pevné velikosti pro ukládání dat na systém souborů.
+
+\newpage
+\section{Popis řešení}
+\paragraph{}
+Aplikace je psaná v jazyce \texttt{C++}. Většina funkčností aplikace je vyčleněna v samostatném souboru, který je pojmenován podle příkazu, jenž obsluhuje.
+
+\subsection{Struktura filesystem}
+\paragraph{}
+Struktura uchovává cestu k souboru na pevném disku, načtený superblok, kořenový adresář a současný adresář.
+
+\subsection{Struktura superblock}
+\paragraph{}
+Struktura uchovává velikost databloku a adresy na počáteční pozice oblastí bitmapy, i-uzlů a datových bloků.
+
+\subsection{Struktura pseudo\_inode}
+\paragraph{}
+Struktura reprezentující i-uzel. Obsahuje ID, typ, počet referencí, velikost souboru, přímé a nepřímé odkazy.
+\subsubsection{ID i-uzlu}
+\paragraph{}
+Ke každému souboru se váže i-uzel, který uchovává metadata souboru. Je-li uzel volný, id je rovno nule. Podle ID lze určit adresu v otevřeném souboru na pevném disku. 
+$$
+\text{s = počáteční pozice oblasti i-uzlů}
+$$
+$$
+\text{n = ID i-uzlu}
+$$
+$$
+\text{pozice i-uzlu} = s + \left( n-1 \right) \cdot \text{sizeof(pseudo\_inode)}
+$$
+\subsubsection{Typ i-uzlu}
+\paragraph{}
+V práci jsou soubory tří typů, tj. adresáře, soubory, symbolické odkazy. Ve struktuře jsou reprezentovány číslem.
+$$
+\text{0 ... soubor}
+$$
+$$
+\text{1 ... adresář}
+$$
+$$
+\text{2 ... symbolický odkaz}
+$$
+
+\subsubsection{Počet referencí na i-uzel}
+\paragraph{}
+V aplikaci je vždy počet referencí jedna nebo nula. V případě implementace hardlinků by bylo možné, aby na jeden i-uzel odkazovalo několik souborů, které sdílejí obsah. Význám počtu referencí je při mazání souborů, kdy k mazání dat může dojít až se smazáním poslední reference.
+
+\subsubsection{Velikost souboru}
+\paragraph{}
+Soubory vždy zabírají celý datový blok, pro určení konce souboru je tedy uváděna hodnota o skutečné velikosti. Při práci se souborem tedy je načteno jen tolik dat, kolik skutečně souboru náleží. Adresáře v souborovém systému vždy využíjí celý datový blok.
+
+\subsubsection{Odkazy i-uzlu}
+\paragraph{}
+I-uzel obsahuje pět přímých odkazů na datové bloky. Pro případ, že by to nedostačovalo, i-uzel obsahuje i dva nepřímé odkazy. První nepřímý odkaz je adresa datového bloku, kde jsou uloženy další přímé adresy na data souboru. Druhý nepřímý odkaz je adresa datového bloku, kde je uloženo \texttt{N} adres na dalších \texttt{N} datových bloků, až na nich jsou přímé odkazy.
+
+\subsection{Struktura directory\_item}
+\paragraph{}
+Struktura reprezentuje pojmenovaný záznam adresáře, souboru nebo symbolického odkazu s ID i-uzlu, který reprezentuje. 
+
+\subsection{Formátování systému souborů}
+\paragraph{}
+Obsluha formátování se nachází v souboru \textit{format.cpp}. Funkce \texttt{format} má dva parametry, referenci na strukturu \texttt{filesystem}, kde je uvedena cesta k souboru a maximální možnou velikost systému souborů v bytech.
+\paragraph{}
+Dle velikosti systému souborů se nastaví velikost datového bloku na \texttt{1024}, \texttt{2048} nebo \texttt{4096 B}. Je brán ohled na maximální velikost souboru vůči velikosti systému souborů.
+\paragraph{}
+Počet i-uzlů je nastaven tak, aby byl vyšší než počet datových bloků.
+\paragraph{}
+Počet datových bloků je vždy číslo dělitelné 8, díky čemuž je vždy zaplněný v bitmapě celý byte.
+\paragraph{}
+Při formátu se vytváří i kořenový adresář, který je vždy na prvním i-uzlu a na prvním datovém bloku.
+
+\subsection{Průchod adresáři}
+\paragraph{}
+Každý adresář obsahuje záznam \texttt{.}, kterým adresář odkazuje sám na sebe a záznam \texttt{..}, kterým odkazuje na nadřazený adresář. Kořenový adresář má oba záznamy nastaveny na sebe.
+\paragraph{}
+Vyhledávání dle zadané lokace provádí funkce \texttt{iNodeByLocation} v souboru \textit{inode.cpp}. Funkce může vracet reference na inode adresáře, souboru i symbolického odkazu.
+\paragraph{}
+Cesta je zadávána jako textový řetězec, který je rozdělen lomítkem (tj. dle symbolu\nobreakspace \texttt{/}). V případě absolutní cesty je lomítko zadáno na začátku a první řetězec v rozděleném poli je prázdný, nastaví se tedy kořenový adresář jako začátek průchodu. Není-li první řetězec prázdný, jako začátek průchodu je označen současný adresář.
+\paragraph{}
+Od procházeného adresáře se získávají všechny platné (tj. nenulové) odkazy na datové bloky. Z datových bloků jsou načteny záznamy \texttt{{directory\_item}}, kde se hledá záznam požadovaného názvu s odkazem na další i-uzel.
+\paragraph{}
+V případě symbolických odkazů je na prvním přímem odkazu uložena nová cesta, rekurzivně se provede vyhledání nové cesty.
+
+\subsection{Zápis souborů}
+\paragraph{}
+Zápis je obdobně prováděn v souborech \textit{{incp.cpp}}, \textit{{cp.cpp}}, \textit{{mkdir.cpp}} a \textit{{slink.cpp}}. Nejnáročnější je implementace pro příkaz \texttt{{incp}}, kde dochází ke kopírování dat z pevného disku. Před zápisem dojde ke zjištění velikosti načítaného souboru, přepočet dostupných databloků z bitmapy, omezení maximálního počtu databloků na soubor a zajištění volného i-uzlu.
+\paragraph{}
+Soubor se načítá z pevného disku do pole datového typu \texttt{{char}} o velikosti jednoho datového bloku, vždy po načtení do pole se provede zápis do systému souborů a pole se uvolní pro načítání další části.
+\paragraph{}
+Po načtení souboru se vytvoří v nadřezeném adresáři nový záznam \texttt{{directory\_item}}, který odkazuje na i-uzel souboru.
+
+\subsection{Odstranění souborů}
+\paragraph{}
+Odstranění souboru i adresářů je implementováno souborem \texttt{rm.cpp}. Odstranit lze pouze prázdné adresáře. Kořenový adresář smazat nelze, protože neexistuje nadřazený adresář, respektive odkazuje sám na sebe. Při odstraňování nelze procházet skrze symbolické odkazy. Datové bloky se mažou až při opětovném zápisu, při mazání docházi pouze k vynulování odpovídajícího bitu v bitmapě a nastavení použitého i-uzlu na nulové hodnoty.
+
+\subsection{Čtení souborů}
+\paragraph{}
+Čtení souborů se provádí například v souborech \textit{{outcp.cpp}}, \textit{{cat.cpp}} či \textit{{info.cpp}}. Funkce  \texttt{iNodeByLocation} obstará požadovaný i-uzel, může procházet i skrze symbolické odkazy. V druhém kroku se získají skrze metodu \texttt{{usedDatablockByINode}} ze souboru \textit{{datablock.cpp}} všechny použité adresy, které budou načteny do vektoru. Výpis se provádí procházením adres jedné po druhé a vkládáním do bufferu o velikosti jednoho datového bloku, který se následně vypisuje.
+
+\subsection{Omezení zvoleného řešení}
+\paragraph{}
+Byty souborového systému jsou reprezentovány datovým typem \texttt{int32\_t}, který může nabývat maximální hodnoty \texttt{2 147 483 647}. To omezuje maximální velikost souborového systému na \texttt{2 GB}. Tuto hodnotu by bylo možné zdvojnásobit použitím neznamenkového datového typu \texttt{uint32\_t}. Pro ještě větší velikosti je možné použít datobé typy z\nobreakspace knihovny \texttt{multi-precision library}.
+\paragraph{}
+Velikost databloku je závislá a pevně daná dle velikosti souborového systému. Souborový systém do velikosti \texttt{100 MB} má databloky o velikosti \texttt{1 kB}, dále do velikosti \texttt{600\nobreakspace MB} jsou databloky o velikosti \texttt{2 kB}, následně pro větší souborové systemy je zvolena velikost\nobreakspace \texttt{4 kB}.
+\paragraph{}
+Maximální možná velikost souboru se odvíjí od velikosti databloku. U nepřímých odkazů se do databloků ukládají adresy o velikosti \texttt{4 kB}, protože je pro reprezentaci použit datový typ \texttt{int32\_t}. Dle vzorce lze spočítat maximální možnou velikost souboru.\\
+$$
+\text{d = velikost databloku}
+$$
+$$
+5 \cdot d + \left( \dfrac{d}{4} \right) \cdot d + \left( \dfrac{d}{4} \right) ^2  \cdot d
+$$
+
+\begin{table}[!ht]
+\centering
+\begin{tabular}{|l|r|r|r|}
+\hline
+\multicolumn{4}{|c|}{\textbf{Maximální možná velikost souboru}}             \\ \hline
+\textbf{datablok} & \textbf{B} & \textbf{kB} & \textbf{MB} \\ \hline
+1024 & 67 376 128 & 65 797 & 64,25 \\ \hline
+2048 & 537 929 728 & 525 322 & 513,01 \\ \hline
+4096 & 2 149 601 280 & 2 099 220 & 2 050,01 \\ \hline
+\end{tabular}
+\caption{Maximální možná velikost souboru dle velikosti databloku.}
+\label{os-share}
+\end{table}
+
+\newpage
+\section{Uživatelská dokumentace}
+\subsection{Požadavky}
+\paragraph{}
+Aplikace je primárně určena pro operační systém \textbf{GNU/Linux}. Pro rozbalení archívu a překlad aplikace byly použity nástroje:
+\begin{itemize}
+\item tar,
+\item cmake,
+\item make,
+\item gcc.
+\end{itemize}
+
+\subsection{Postup pro GNU/Debian}
+\begin{enumerate}
+\item Nainstaluje do systému potřebné balíčky tar, cmake, make a gcc.\\
+\texttt{sudo apt install tar cmake make gcc}
+\item Rozbalení archívu s aplikací.\\
+\texttt{tar xvzf PseudoFS.tar.gz}
+\item Přesunutí do adresáře aplikace.\\
+\texttt{cd PseudoFS/src/build}
+\item Provede překlad aplikace.\\
+\texttt{cmake .. \&\& make}
+\item Spuštění aplikace.\\
+\texttt{./PseudoFS}
+\end{enumerate}
+
+\subsection{Ovládání}
+\paragraph{}
+Aplikace se ovládá příkazy tak, jak jsou uvedeny v zadání práce. Pro ukončení aplikace slouží navíc příkaz \texttt{q}.
+
+\end{document}
